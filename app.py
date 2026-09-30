@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import calendar
 
 st.set_page_config(page_title="Polay Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
-# 1. GÜNCEL ÇALIŞAN LİSTESİ
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
         {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
@@ -19,7 +19,6 @@ if 'calisanlar' not in st.session_state:
         {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True}
     ]
 
-# Matris yapısı hafızası
 if 'aylik_matris' not in st.session_state:
     st.session_state.aylik_matris = {}
 
@@ -89,14 +88,13 @@ elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
     with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027])
+        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
-    ay_gunleri_sozluk = {"Ocak":31, "Şubat":28, "Mart":31, "Nisan":30, "Mayıs":31, "Haziran":30, "Temmuz":31, "Ağustos":31, "Eylül":30, "Ekim":31, "Kasım":30, "Aralık":31}
-    gun_sayisi = ay_gunleri_sozluk[secilen_ay]
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     ay_no = ay_numaralari[secilen_ay]
+    weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
     
     st.info("💡 Kullanım: Hücrelerin içine çift tıklayarak kodları (1, 0, 2, Ç) yazın. İşlem bitince alttaki kaydet butonuna basın.")
     
@@ -126,14 +124,13 @@ elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
     with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
-    ay_gunleri_sozluk = {"Ocak":31, "Şubat":28, "Mart":31, "Nisan":30, "Mayıs":31, "Haziran":30, "Temmuz":31, "Ağustos":31, "Eylül":30, "Ekim":31, "Kasım":30, "Aralık":31}
-    r_gun_sayisi = ay_gunleri_sozluk[r_ay]
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     r_ay_no = ay_numaralari[r_ay]
+    weekday, r_gun_sayisi = calendar.monthrange(r_yil, r_ay_no)
 
     rapor_verisi = []
     for c in st.session_state.calisanlar:
@@ -171,3 +168,11 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                         haftalik_calisma[hafta_key] += 1
                     elif v == "2":
                         toplam_yevmiye += 2
+                        haftalik_calisma[hafta_key] += 1
+
+            for pazar in pazar_gunleri:
+                if pazar["kod"] in ["1", "2"]:
+                    if pazar["kod"] == "1": toplam_yevmiye += 1
+                    elif pazar["kod"] == "2": toplam_yevmiye += 2
+                else:
+                    if haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
