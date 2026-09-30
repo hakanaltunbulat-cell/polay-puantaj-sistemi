@@ -26,6 +26,7 @@ st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
+secilen_yil = 2026
 
 if menu == "👤 Çalışan Yönetimi":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -79,10 +80,7 @@ if menu == "👤 Çalışan Yönetimi":
 
 elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
-    col_y, col_a = st.columns(2)
-    with col_y: secilen_yil = st.selectbox("Yıl",)
-    with col_a: secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
-    
+    secilen_ay = st.selectbox("Ay Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
     st.info("💡 Kullanım: Hücrelere klavyeden doğrudan yazabilirsiniz. Hatalı kodlar kaydederken otomatik temizlenir.")
@@ -121,22 +119,19 @@ elif menu == "📅 Puantaj Girişi":
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
-    col_ry, col_ra = st.columns(2)
-    with col_ry: r_yil = st.selectbox("Rapor Yılı",)
-    with col_ra: r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
-    
+    r_ay = st.selectbox("Rapor Ayı Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
-    weekday, r_gun_sayisi = calendar.monthrange(r_yil, r_ay_no)
+    weekday, r_gun_sayisi = calendar.monthrange(secilen_yil, r_ay_no)
     rapor_verisi = list()
 
     for c in st.session_state.calisanlar:
         if c["aktif"]:
             toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, dict(), list()
-            giris_tarihi_obj = datetime.strptime(c["gritar"] if False else c["giris_tarihi"], '%Y-%m-%d').date()
+            giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
             for gun in range(1, r_gun_sayisi + 1):
-                try: m_tarih = datetime(r_yil, r_ay_no, gun).date()
+                try: m_tarih = datetime(secilen_yil, r_ay_no, gun).date()
                 except: continue
-                v = st.session_state.aylik_matris.get(f"{r_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip().upper()
+                v = st.session_state.aylik_matris.get(f"{secilen_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip().upper()
                 if m_tarih < giris_tarihi_obj or is_cikis: continue
                 if v == "Ç": is_cikis = True; continue
                 h_key = m_tarih.strftime('%Y-W%U')
@@ -152,4 +147,5 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
             banka = min(float(c["banka_tutari"]), float(hak_edis))
             rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{(hak_edis - banka):,.2f} ₺"})
-    if rapor_verisi: st.table(pd.DataFrame(rapor_verisi))
+    if rapor_verisi:
+        st.table(pd.DataFrame(rapor_verisi))
