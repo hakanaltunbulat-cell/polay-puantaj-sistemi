@@ -5,17 +5,6 @@ from datetime import datetime
 # Sayfa Genişlik Ayarı ve Başlık
 st.set_page_config(page_title="Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
 
-# CSS ile Şık Tasarım Dokunuşları
-st.markdown("""
-    <style>
-    .stApp { background-color: #f8fafc; }
-    .metric-card {
-        background-color: white; padding: 20px; border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #2563eb;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
 # 1. VERİ TABANI SİMÜLASYONU (Hafızada Tutma)
@@ -29,7 +18,6 @@ if 'puantaj' not in st.session_state:
 
 # 2. SOL MENÜ (NAVİGASYON)
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
-st.sidebar.header("👑 Yönetici Paneli")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 
 # --- SAYFA 1: ÇALIŞAN YÖNETİMİ ---
