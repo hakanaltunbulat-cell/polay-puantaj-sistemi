@@ -37,12 +37,10 @@ st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
-secilen_yil, secilen_ay = 2026, "Eylül"
-ay_no = 9
-gun_sayisi = 30
+secilen_yil, secilen_ay, ay_no, gun_sayisi = 2026, "Eylül", 9, 30
 
 if islem == "👤 Çalışan Ekle / Sil / Düzenle":
-    st.subheader("👤 Çalışan Listesi ve Yönetimi")
+    st.subheader("👤 Çalışan Listesi ve Banka Bilgisi Yönetimi")
     ad = st.text_input("Yeni Çalışan Adı Soyadı").upper()
     tur = st.selectbox("Maaş Tipi", ["Yevmiye", "Aylık"])
     ucret = st.number_input("Ücret Tutarı", min_value=0, value=2000)
@@ -53,16 +51,31 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         st.success("✔️ Başarıyla eklendi!"); st.rerun()
         
     st.write("---")
+    st.subheader("✏️ Mevcut Çalışanın Banka ve Ücret Bilgilerini Değiştir")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
     if isimler:
-        sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", isimler)
+        secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
+        idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
+        c_bilgi = st.session_state.calisanlar[idx]
+        
+        y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(c_bilgi["ucret"]))
+        y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(c_bilgi["banka_tutari"]))
+        if st.button("🔄 Değişiklikleri Personel Kartına Kilitle"):
+            st.session_state.calisanlar[idx]["ucret"] = y_ucret
+            st.session_state.calisanlar[idx]["banka_tutari"] = y_banka
+            st.success("✔️ Personel ücret ve banka bilgileri güncellendi!"); st.rerun()
+
+    st.write("---")
+    st.subheader("🗑️ Çalışan Sil")
+    if isimler:
+        sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(isimler)))
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
             st.success("❌ Silindi!"); st.rerun()
 
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
+    st.sidebar.markdown("### ### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
     secilen_atesci = st.sidebar.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
     atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
