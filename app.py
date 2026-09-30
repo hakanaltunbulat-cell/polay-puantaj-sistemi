@@ -88,7 +88,7 @@ elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
     with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
+        secilen_yil = st.selectbox("Yıl", [2026, 2027])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -124,7 +124,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
     with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -148,9 +148,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     continue
                 matris_key = f"{r_yil}_{r_ay_no}_{c['id']}_{gun}"
                 v = st.session_state.aylik_matris.get(matris_key, "1")
-                if mevcut_tarih < giris_tarihi_obj:
-                    continue
-                if is_cikis_yapti:
+                if mevcut_tarih < giris_tarihi_obj or is_cikis_yapti:
                     continue
                 if v == "Ç":
                     is_cikis_yapti = True
@@ -171,9 +169,11 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                         haftalik_calisma[hafta_key] += 1
 
             for pazar in pazar_gunleri:
-                if pazar["kod"] in ["1", "2"]:
-                    if pazar["kod"] == "1":
-                        toplam_yevmiye += 1
-                    elif pazar["kod"] == "2":
-                        toplam_yevmiye += 2
-                else:
+                if pazar["kod"] == "1":
+                    toplam_yevmiye += 1
+                elif pazar["kod"] == "2":
+                    toplam_yevmiye += 2
+                elif haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
+                    toplam_yevmiye += 1
+
+            if c["tur"] == "Yevmiye":
