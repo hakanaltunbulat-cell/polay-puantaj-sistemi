@@ -92,17 +92,14 @@ elif menu == "📅 Puantaj Girişi":
         secilen_yil = st.selectbox("Yıl", [2026, 2027])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+    
+    ay_gunleri_sozluk = {"Ocak":31, "Şubat":28, "Mart":31, "Nisan":30, "Mayıs":31, "Haziran":30, "Temmuz":31, "Ağustos":31, "Eylül":30, "Ekim":31, "Kasım":30, "Aralık":31}
+    gun_sayisi = ay_gunleri_sozluk[secilen_ay]
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     ay_no = ay_numaralari[secilen_ay]
+    
     st.info("💡 Kullanım: Hücrelerin içine çift tıklayarak kodları (1, 0, 2, Ç) yazın. İşlem bitince alttaki kaydet butonuna basın.")
     
-    if ay_no in:
-        gun_sayisi = 30
-    elif ay_no == 2:
-        gun_sayisi = 28
-    else:
-        gun_sayisi = 31
-
     matris_data = []
     for c in st.session_state.calisanlar:
         if c["aktif"]:
@@ -132,15 +129,11 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+    
+    ay_gunleri_sozluk = {"Ocak":31, "Şubat":28, "Mart":31, "Nisan":30, "Mayıs":31, "Haziran":30, "Temmuz":31, "Ağustos":31, "Eylül":30, "Ekim":31, "Kasım":30, "Aralık":31}
+    r_gun_sayisi = ay_gunleri_sozluk[r_ay]
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     r_ay_no = ay_numaralari[r_ay]
-    
-    if r_ay_no in:
-        r_gun_sayisi = 30
-    elif r_ay_no == 2:
-        r_gun_sayisi = 28
-    else:
-        r_gun_sayisi = 31
 
     rapor_verisi = []
     for c in st.session_state.calisanlar:
@@ -178,24 +171,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                         haftalik_calisma[hafta_key] += 1
                     elif v == "2":
                         toplam_yevmiye += 2
-                        haftalik_calisma[hafta_key] += 1
-
-            for pazar in pazar_gunleri:
-                if pazar["kod"] in ["1", "2"]:
-                    if pazar["kod"] == "1": toplam_yevmiye += 1
-Kodu dikkatli kullanın.
-elif pazar["kod"] == "2": toplam_yevmiye += 2
-else:
-if haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
-toplam_yevmiye += 1
-if c["tur"] == "Yevmiye":
-hak_edis = toplam_yevmiye * c["ucret"]
-else:
-hak_edis = c["ucret"]
-if is_cikis_yapti:
-hak_edis = c["ucret"] / 2
-banka = min(float(c["banka_tutari"]), float(hak_edis))
-elden = hak_edis - banka
-rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{elden:,.2f} ₺"})
-if rapor_verisi:
-st.table(pd.DataFrame(rapor_verisi))
