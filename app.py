@@ -95,7 +95,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
             st.success("❌ Silindi!"); st.rerun()
 
-elif islem == "📅 Puantaj Matrisi & Rapor":
+elif islem == "📅 Puantaj Girişi" or islem == "📅 Puantaj Matrisi & Rapor":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
@@ -164,4 +164,3 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
         rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
 
-    rapor_verisi.append({"İşçi Adı": "➡️ GENEL TOPLAM", "Tür": "---", "Maaş / Ücret": "---", "Hesaplanan Gün": "---", "Toplam Hak Ediş": f"{int(t_hakedis):,} ₺", "Bankaya Yatacak": f"{int(t_banka):} ₺", "Elden Verilecek": f"{int(t_elden):} ₺"})
