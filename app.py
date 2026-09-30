@@ -2,9 +2,49 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import calendar
+import json
+import os
 
 KULLANICI_ADI, SIFRE = "polay", "1234"
+CALISAN_DOSYA = "veri_calisanlar.json"
+MATRIS_DOSYA = "veri_puantaj.json"
+
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
+
+def verileri_yukle():
+    if os.path.exists(CALISAN_DOSYA):
+        with open(CALISAN_DOSYA, "r", encoding="utf-8") as f:
+            st.session_state.calisanlar = json.load(f)
+    else:
+        st.session_state.calisanlar = [
+            {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750},
+            {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000},
+            {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Yevmiye", "ucret": 1524, "banka_tutari": 15000},
+            {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000},
+            {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
+            {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
+            {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Yevmiye", "ucret": 2000, "banka_tutari": 15000},
+            {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000},
+            {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000}
+        ]
+    if os.path.exists(MATRIS_DOSYA):
+        with open(MATRIS_DOSYA, "r", encoding="utf-8") as f:
+            st.session_state.aylik_matris = json.load(f)
+    else:
+        st.session_state.aylik_matris = {}
+        for g in range(1, 31): st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
+        st.session_state.aylik_matris["2026_9_1_11"] = "0"
+        st.session_state.aylik_matris["2026_9_1_17"] = "0"
+        st.session_state.aylik_matris["2026_9_1_25"] = "0"
+
+def verileri_kaydet():
+    with open(CALISAN_DOSYA, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.calisanlar, f, ensure_ascii=False, indent=4)
+    with open(MATRIS_DOSYA, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
+
+if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state:
+    verileri_yukle()
 
 if 'giris_yapildi' not in st.session_state: st.session_state.giris_yapildi = False
 
@@ -26,26 +66,6 @@ st.markdown("""<style>
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ SİSTEMİ</div>', unsafe_allow_html=True)
 
-if 'calisanlar' not in st.session_state:
-    st.session_state.calisanlar = [
-        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750},
-        {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000},
-        {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Yevmiye", "ucret": 1524, "banka_tutari": 15000},
-        {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000},
-        {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
-        {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
-        {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Yevmiye", "ucret": 2000, "banka_tutari": 15000},
-        {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000},
-        {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000}
-    ]
-
-if 'aylik_matris' not in st.session_state:
-    st.session_state.aylik_matris = {}
-    for g in range(1, 31): st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
-    st.session_state.aylik_matris["2026_9_1_11"] = "0"
-    st.session_state.aylik_matris["2026_9_1_17"] = "0"
-    st.session_state.aylik_matris["2026_9_1_25"] = "0"
-
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 if st.sidebar.button("🔒 Güvenli Çıkış Yap"): st.session_state.giris_yapildi = False; st.rerun()
 
@@ -63,23 +83,25 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     if st.button("💾 Yeni Çalışanı Sisteme Kaydet") and ad:
         y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
         st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut})
-        st.success("✔️ Başarıyla eklendi!"); st.rerun()
+        verileri_kaydet(); st.success("✔️ Başarıyla eklendi!"); st.rerun()
+        
     st.write("---")
+    st.subheader("✏️ Mevcut Çalışanın Banka ve Ücret Bilgilerini Değiştir")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if isimler:
+    if list(set(isimler)):
         secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
         y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["ucret"]))
         y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["banka_tutari"]))
         if st.button("🔄 Değişiklikleri Personel Kartına Kilitle"):
             st.session_state.calisanlar[idx]["ucret"], st.session_state.calisanlar[idx]["banka_tutari"] = y_ucret, y_banka
-            st.success("✔️ Güncellendi!"); st.rerun()
+            verileri_kaydet(); st.success("✔️ Güncellendi!"); st.rerun()
     st.write("---")
-    if isimler:
+    if list(set(isimler)):
         sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(isimler)))
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
-            st.success("❌ Silindi!"); st.rerun()
+            verileri_kaydet(); st.success("❌ Silindi!"); st.rerun()
 
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.sidebar.markdown("---")
@@ -110,7 +132,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                 c_id = int(row["SIRA"])
                 for gun in range(1, gun_sayisi + 1):
                     st.session_state.aylik_matris[f"{secilen_yil}_{ay_no}_{c_id}_{gun}"] = str(row[sutun_haritalama[gun]]).strip().upper() if str(row[sutun_haritalama[gun]]).strip().upper() in gecerli_kodlar else ""
-            st.success("✔️ Puantajlar kaydedildi!"); st.rerun()
+            verileri_kaydet(); st.success("✔️ Puantajlar kalıcı hafızaya kaydedildi!"); st.rerun()
     st.write("---")
     st.subheader(f"💰 {secilen_ay} {secilen_yil} Hak Ediş ve Ödeme Dağılım Listesi")
     rapor_verisi = list()
@@ -139,7 +161,3 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         eld = float(h_edis - bnk)
         c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
         if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
-        t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
-        rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
-    rapor_verisi.append({"İşçi Adı": "➡️ GENEL TOPLAM", "Tür": "---", "Maaş / Ücret": "---", "Hesaplanan Gün": "---", "Toplam Hak Ediş": f"{int(t_hakedis):,} ₺", "Bankaya Yatacak": f"{int(t_banka):} ₺", "Elden Verilecek": f"{int(t_elden):} ₺"})
-    df_rap = pd.DataFrame(rapor_verisi); st.table(df_rap); st.write("---"); csv = df_rap.to_csv(index=False).encode('utf-8'); st.download_button("📥 Bu Raporu Excel/CSV Olarak Bilgisayara İndir", data=csv, file_name="Polay_Madencilik_Rapor.csv", mime="text/csv")
