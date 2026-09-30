@@ -52,12 +52,6 @@ if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_stat
             st.session_state.aylik_matris = json.load(f)
     else:
         st.session_state.aylik_matris = {}
-        for c in st.session_state.calisanlar:
-            for g in range(1, 32): 
-                st.session_state.aylik_matris[f"2026_9_{c['id']}_{g}"] = "1"
-            st.session_state.aylik_matris[f"2026_9_{c['id']}_11"] = "0"
-            st.session_state.aylik_matris[f"2026_9_{c['id']}_17"] = "0"
-            st.session_state.aylik_matris[f"2026_9_{c['id']}_25"] = "0"
 
 def verileri_kaydet():
     with open(CALISAN_DOSYA, "w", encoding="utf-8") as f: 
@@ -82,7 +76,7 @@ if st.sidebar.button("🔒 Güvenli Çıkış Yap"):
 
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
-gecerli_kodlar = ["1", "0", "2", "Ç", ""]
+gecerli_kodlar = ["", "1", "0", "2", "Ç"]
 
 # --- MODÜL 1: ÇALIŞAN YÖNETİMİ ---
 if islem == "👤 Çalışan Ekle / Sil / Düzenle":
@@ -167,7 +161,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             width="small"
         )
 
-    # Matris verisini hazırlama
+    # Matris verisini hazırlama (Eğer kayıt yoksa tamamen boş gelir)
     for c in st.session_state.calisanlar:
         satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
         for gun in range(1, gun_sayisi + 1):
@@ -177,7 +171,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             
             anahtar = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
             if anahtar not in st.session_state.aylik_matris:
-                st.session_state.aylik_matris[anahtar] = "1"
+                st.session_state.aylik_matris[anahtar] = ""
                 
             satir[sutun_basligi] = st.session_state.aylik_matris[anahtar]
         matris_data.append(satir)
@@ -185,7 +179,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     df_matris = pd.DataFrame(matris_data)
     
     st.markdown("### 📝 Puantaj Düzenleme Tablosu")
-    st.caption("💡 Hücreye çift tıklayıp durum seçebilirsiniz. Değerler: 1: Çalıştı, 0: Gelmedi, 2: Çift Yevmiye, Ç: Çıkış")
+    st.caption("💡 Tüm hücreler boş başlar. Çift tıklayıp durum seçin: 1: Çalıştı, 0: Gelmedi, 2: Çift Yevmiye, Ç: Çıkış")
     
     edited_df = st.data_editor(
         df_matris,
@@ -205,3 +199,16 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                 anahtar = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
                 st.session_state.aylik_matris[anahtar] = str(row[sutun_basligi])
         verileri_kaydet()
+        st.success("✔️ Değişiklikler başarıyla kaydedildi!")
+        st.rerun()
+
+    # --- HAKEDİŞ VE HESAP RAPORU PANELİ ---
+    st.write("---")
+    st.markdown("### 📊 Otomatik Hakediş & Maaş Hesap Raporu")
+    
+    rapor_listesi = []
+    for c in st.session_state.calisanlar:
+        toplam_gun = 0.0
+        
+        # Gün durumlarını sayma
+        for gun in range(1, gun_sayisi + 1):
