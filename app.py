@@ -95,7 +95,6 @@ elif menu == "📅 Puantaj Girişi":
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     ay_no = ay_numaralari[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
-    
     st.info("💡 Kullanım: Hücrelerin içine çift tıklayarak kodları (1, 0, 2, Ç) yazın. İşlem bitince alttaki kaydet butonuna basın.")
     
     matris_data = []
@@ -155,18 +154,18 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     continue
                 
                 hafta_key = mevcut_tarih.strftime('%Y-W%U')
-                if hafta_key not in haftalik_calisma:
-                    haftalik_calisma[hafta_key] = 0
+                if "".join(hafta_key) not in haftalik_calisma:
+                    haftalik_calisma["".join(hafta_key)] = 0
                 
                 if mevcut_tarih.weekday() == 6:
-                    pazar_gunleri.append({"hafta_key": hafta_key, "kod": v})
+                    pazar_gunleri.append({"hafta_key": "".join(hafta_key), "kod": v})
                 else:
                     if v == "1":
                         toplam_yevmiye += 1
-                        haftalik_calisma[hafta_key] += 1
+                        haftalik_calisma["".join(hafta_key)] += 1
                     elif v == "2":
                         toplam_yevmiye += 2
-                        haftalik_calisma[hafta_key] += 1
+                        haftalik_calisma["".join(hafta_key)] += 1
 
             for pazar in pazar_gunleri:
                 if pazar["kod"] == "1":
@@ -175,5 +174,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     toplam_yevmiye += 2
                 elif haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
                     toplam_yevmiye += 1
-
-            if c["tur"] == "Yevmiye":
