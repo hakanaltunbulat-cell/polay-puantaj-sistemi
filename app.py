@@ -5,17 +5,17 @@ import calendar
 import json
 import os
 
-# Sabit Giriş Bilgileri ve Dosya Yolları
+# --- GÜVENLİK VE DOSYA YAPILANDIRMASI ---
 KULLANICI_ADI, SIFRE = "polay", "1234"
 CALISAN_DOSYA, MATRIS_DOSYA = "veri_calisanlar.json", "veri_puantaj.json"
 
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
-# --- Oturum Yönetimi ve İlk Kurulum ---
+# Oturum Durumu Kontrolü
 if 'giris_yapildi' not in st.session_state: 
     st.session_state.giris_yapildi = False
 
-# Güvenli Giriş Paneli
+# Güvenli Giriş Ekranı
 if not st.session_state.giris_yapildi:
     st.subheader("🔒 POLAY PUANTAJ SİSTEMİ - GÜVENLİ GİRİŞ")
     g_kullanici = st.text_input("Yönetici Kullanıcı Adı:")
@@ -29,13 +29,12 @@ if not st.session_state.giris_yapildi:
             st.error("🚨 Hatalı Giriş Bilgileri!")
     st.stop()
 
-# Verilerin JSON Dosyalarından Yüklenmesi
+# Veri Dosyalarının Yüklenmesi
 if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state:
     if os.path.exists(CALISAN_DOSYA):
         with open(CALISAN_DOSYA, "r", encoding="utf-8") as f: 
             st.session_state.calisanlar = json.load(f)
     else:
-        # Varsayılan Çalışan Listesi
         st.session_state.calisanlar = [
             {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750},
             {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000},
@@ -52,12 +51,10 @@ if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_stat
         with open(MATRIS_DOSYA, "r", encoding="utf-8") as f: 
             st.session_state.aylik_matris = json.load(f)
     else:
-        # Varsayılan Puantaj Matrisi (Eylül 2026 için doldurma)
         st.session_state.aylik_matris = {}
         for c in st.session_state.calisanlar:
             for g in range(1, 31): 
                 st.session_state.aylik_matris[f"2026_9_{c['id']}_{g}"] = "1"
-            # Örnek pazar/izin günleri kesintisi
             st.session_state.aylik_matris[f"2026_9_{c['id']}_11"] = "0"
             st.session_state.aylik_matris[f"2026_9_{c['id']}_17"] = "0"
             st.session_state.aylik_matris[f"2026_9_{c['id']}_25"] = "0"
@@ -68,16 +65,16 @@ def verileri_kaydet():
     with open(MATRIS_DOSYA, "w", encoding="utf-8") as f: 
         json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
 
-# --- Arayüz Tasarımı ve CSS Düzenlemeleri ---
+# --- ARAYÜZ VE GÖRSEL STİLLER (CSS) ---
 st.markdown("""<style>
-    .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 15px; margin-top: 15px; }
+    .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 15px; }
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
     td { border: 1px solid #d9d9d9 !important; text-align: center !important; }
 </style>""", unsafe_allow_html=True)
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ SİSTEMİ</div>', unsafe_allow_html=True)
 
-# --- Yan Menü (Sidebar) Yönetimi ---
+# --- YAN MENÜ (SIDEBAR) ---
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 if st.sidebar.button("🔒 Güvenli Çıkış Yap"): 
     st.session_state.giris_yapildi = False
@@ -87,7 +84,7 @@ islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "�
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
 
-# --- 1. MODÜL: ÇALIŞAN YÖNETİMİ ---
+# --- MODÜL 1: ÇALIŞAN YÖNETİMİ ---
 if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.subheader("👤 Çalışan Listesi ve Banka Bilgisi Yönetimi")
     
@@ -103,11 +100,11 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
         st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut})
         verileri_kaydet()
-        st.success(f"✔️ {ad} başarıyla sisteme eklendi!")
+        st.success(f"✔️ {ad} başarıyla eklendi!")
         st.rerun()
         
     st.write("---")
-    st.subheader("✏️ Mevcut Çalışanın Banka ve Ücret Bilgilerini Değiştir")
+    st.subheader("✏️ Personel Kartı Güncelleme")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
     if isimler:
         secilen_kisi = st.selectbox("Personel Seçin:", list(set(isimler)))
@@ -133,10 +130,10 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
             verileri_kaydet()
-            st.success("❌ Personel kaydı başarıyla silindi!")
+            st.success("❌ Personel kaydı silindi!")
             st.rerun()
 
-# --- 2. MODÜL: PUANTAJ MATRİSİ VE RAPORLAMA ---
+# --- MODÜL 2: PUANTAJ MATRİSİ VE RAPORLAMA ---
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
@@ -152,7 +149,6 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     secilen_atesci = st.sidebar.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
     atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
     
-    # Matris Tablosunun Hazırlanması
     matris_data = []
     sutun_haritalama = {}
     config_sutunlar = {
@@ -191,6 +187,13 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                     m_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
                     st.session_state.aylik_matris[m_key] = deger
             verileri_kaydet()
-            st.success("✔️ Değişiklikler başarıyla diske kaydedildi ve rapor güncellendi!")
+            st.success("✔️ Puantaj veritabanı başarıyla güncellendi!")
             st.rerun()
         
+        # --- MAAŞ HESAPLAMA VE RAPORLAMA KISMI ---
+        st.write("---")
+        st.markdown(f'<div class="excel-title">💰 {secilen_ay.upper()} {secilen_yil} HAK EDİŞ VE ÖDEME DAĞILIM LİSTESİ</div>', unsafe_allow_html=True)
+        
+        rapor_verileri = []
+        for c in st.session_state.calisanlar:
+            c_id = int(c["id"])
