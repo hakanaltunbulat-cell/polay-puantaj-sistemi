@@ -34,7 +34,6 @@ if 'calisanlar' not in st.session_state:
 
 if 'aylik_matris' not in st.session_state:
     st.session_state.aylik_matris = {}
-    # Eylül 2026 orijinal verisini hafızaya hazır yüklüyoruz
     for g in range(1, 31):
         st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
     st.session_state.aylik_matris["2026_9_1_11"] = "0"
@@ -55,7 +54,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         b_tut = st.number_input("Bankaya Yatacak Sabit Tutar", min_value=0, value=15000, step=1000)
         if st.form_submit_button("💾 Kaydet") and ad:
             y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
-            st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": b_tut if False else ucret, "banka_tutari": b_tut, "aktif": True})
+            st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut, "aktif": True})
             st.success("✔️ Eklendi!")
             st.rerun()
 
@@ -87,19 +86,16 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
             st.rerun()
 
 elif islem == "📅 Puantaj Matrisi & Rapor":
-    # 📆 DİNAMİK TAKVİM SEÇİM ALANI (YILLAR VE AYLAR AKTİF)
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
-    with c_y:
-        secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027, 2028], index=2) # Varsayılan 2026
-    with c_a:
-        secilen_ay = st.selectbox("Ay Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8) # Varsayılan Eylül
+    with c_y: secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
+    with c_a: secilen_ay = st.selectbox("Ay Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
         
     ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
     ay_no = ay_numaralari[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
     
-    st.info(f"💡 Şu an **{secilen_ay} {secilen_yil}** dönemindesiniz. Hücrelere klavyeden yazıp alttaki butonla o aya ait puantajı kilitleyebilirsiniz.")
+    st.info(f"💡 Şu an **{secilen_ay} {secilen_yil}** dönemindesiniz. Hücrelere yazıp alttaki butonla kilitleyebilirsiniz.")
     
     matris_data = list()
     sutun_haritalama = dict()
@@ -153,7 +149,9 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         for pzr in pazar_gunleri:
             if pzr["kod"] == "1": toplam_yevmiye += 1
             elif pzr["kod"] == "2": toplam_yevmiye += 2
-            elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
+            elif pzr["kod"] == "" or pzr["kod"] == "0":
+                # 📢 DÜZELTME KURALI: Hücre boşsa ("") veya 0 ise otomatik "Gelmedi" sayılır, pazar hak edişi hafta içine bakılarak eklenir.
+                if haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
 
         if c["tur"] == "Yevmiye":
             h_edis = float(toplam_yevmiye * c["ucret"])
