@@ -88,7 +88,7 @@ elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
     with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027])
+        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -104,7 +104,7 @@ elif menu == "📅 Puantaj Girişi":
             for gun in range(1, gun_sayisi + 1):
                 matris_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
                 if matris_key not in st.session_state.aylik_matris:
-                    st.session_state.aylik_matris[matris_key] = "1"
+                    st.session_state.aylik_matris[matris_key] = ""
                 satir[str(gun)] = st.session_state.aylik_matris[matris_key]
             matris_data.append(satir)
 
@@ -116,14 +116,14 @@ elif menu == "📅 Puantaj Girişi":
                 c_id = row["SIRA"]
                 for gun in range(1, gun_sayisi + 1):
                     matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    st.session_state.aylik_matris[matris_key] = str(row[str(gun)])
+                    st.session_state.aylik_matris[matris_key] = str(row[str(gun)]).strip()
             st.success(f"✔️ {secilen_ay} {secilen_yil} dönemine ait tüm puantaj tablosu başarıyla kaydedildi!")
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
     with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -146,7 +146,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 except:
                     continue
                 matris_key = f"{r_yil}_{r_ay_no}_{c['id']}_{gun}"
-                v = st.session_state.aylik_matris.get(matris_key, "1")
+                v = st.session_state.aylik_matris.get(matris_key, "").strip()
                 if mevcut_tarih < giris_tarihi_obj or is_cikis_yapti:
                     continue
                 if v == "Ç":
@@ -154,18 +154,18 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     continue
                 
                 hafta_key = mevcut_tarih.strftime('%Y-W%U')
-                if "".join(hafta_key) not in haftalik_calisma:
-                    haftalik_calisma["".join(hafta_key)] = 0
+                if hafta_key not in haftalik_calisma:
+                    haftalik_calisma[hafta_key] = 0
                 
                 if mevcut_tarih.weekday() == 6:
-                    pazar_gunleri.append({"hafta_key": "".join(hafta_key), "kod": v})
+                    pazar_gunleri.append({"hafta_key": hafta_key, "kod": v})
                 else:
                     if v == "1":
                         toplam_yevmiye += 1
-                        haftalik_calisma["".join(hafta_key)] += 1
+                        haftalik_calisma[hafta_key] += 1
                     elif v == "2":
                         toplam_yevmiye += 2
-                        haftalik_calisma["".join(hafta_key)] += 1
+                        haftalik_calisma[hafta_key] += 1
 
             for pazar in pazar_gunleri:
                 if pazar["kod"] == "1":
@@ -174,3 +174,5 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     toplam_yevmiye += 2
                 elif haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
                     toplam_yevmiye += 1
+
+            hak_edis = 0.0
