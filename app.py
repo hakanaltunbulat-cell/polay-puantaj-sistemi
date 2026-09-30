@@ -153,3 +153,4 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
             rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{h_edis:,.2f} ₺", "Bankaya Yatacak": f"{bnk:,.2f} ₺", "Elden Verilecek": f"{eld:,.2f} ₺"})
             
+    if len(rapor_verisi) > 0:
