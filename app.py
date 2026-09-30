@@ -57,8 +57,6 @@ if menu == "👤 Çalışan Yönetimi":
     
     if aktif_isimler_duzenle:
         secilen_duzenle = st.selectbox("Bilgilerini değiştirmek istediğiniz çalışanı seçin:", aktif_isimler_duzenle, key="duzenle_sec")
-        
-        # Seçilen çalışanın indeksini ve verisini bulalım
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_duzenle)
         calisan_bilgi = st.session_state.calisanlar[idx]
         
@@ -163,6 +161,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 
                 hafta_key = p_tarih_obj.strftime('%Y-W%U')
                 if hafta_key not in haftalik_calisma:
+                    whitespace = 0
                     haftalik_calisma[hafta_key] = 0
                 
                 if p_tarih_obj.weekday() == 6:
