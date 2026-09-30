@@ -7,11 +7,7 @@ st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
 st.markdown("""
     <style>
-    .excel-title {
-        background-color: #75aadb !important; color: black !important;
-        text-align: center; font-weight: bold; font-size: 20px;
-        padding: 12px; border: 1px solid black; margin-bottom: 10px;
-    }
+    .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 10px; }
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
     td { border: 1px solid #d9d9d9 !important; text-align: center !important; }
     </style>
@@ -43,6 +39,7 @@ st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
+secilen_yil = 2026
 
 if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -60,8 +57,8 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.write("---")
     st.subheader("✏️ Çalışan Bilgilerini Düzenle")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if i_list := isimler:
-        s_ad = st.selectbox("Düzenlenecek Kişi:", i_list)
+    if isimler:
+        s_ad = st.selectbox("Düzenlenecek Kişi:", isimler)
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == s_ad)
         c_bilgi = st.session_state.calisanlar[idx]
         with st.form("duzen_form"):
@@ -77,14 +74,14 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
 
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
-    if i_list:
-        sil_ad = st.selectbox("Silinecek Kişi:", i_list, key="sil_box")
+    if isimler:
+        sil_ad = st.selectbox("Silinecek Kişi:", isimler, key="sil_box")
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
             st.success("❌ Silindi!")
             st.rerun()
 
-elif islem == "📅 Puantaj Matrisi & Rapor":
+elif islem == "📅 Puantaj Girişi" or islem == "📅 Puantaj Matrisi & Rapor":
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
     with c_y: secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
@@ -93,7 +90,6 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
     
-    # 🔥 YENİ ÖZELLİK: SOL MENÜYE DİNAMİK ATEŞÇİ SEÇİM KUTULARI EKLEME
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
@@ -119,7 +115,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
 
     if matris_data:
         df_matris = pd.DataFrame(matris_data)
-        g_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_editor_{secilen_yil}_{ay_no}")
+        g_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_final_{secilen_yil}_{ay_no}")
         if st.button("💾 Bu Ayın Puantaj Değişikliklerini Kaydet"):
             for _, row in g_tablo.iterrows():
                 c_id = int(row["SIRA"])
@@ -164,12 +160,14 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         bnk = min(float(c["banka_tutari"]), float(h_edis))
         eld = float(h_edis - bnk)
         
-        # 🔥 ATEŞÇİ İLAVE KURALI: Eğer bu kişi Ateşçi seçildiyse elden ödemesine parayı ekle
-        is_isim = c["ad_soyad"]
-        if secilen_atesci == is_isim:
+        if secilen_atesci == c["ad_soyad"]:
             eld += float(atesci_ucreti)
             h_edis += float(atesci_ucreti)
-            is_isim = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)"
+            c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)"
+        else:
+            c_ad_guncel = c["ad_soyad"]
 
         t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
-        rapor_verisi.append({"İşçi Adı": is_isim, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
+        rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
+
+    if len(rapor_verisi) > 0:
