@@ -9,10 +9,9 @@ st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
 # 1. VERİ TABANI SİMÜLASYONU (Hafızada Tutma)
 if 'calisanlar' not in st.session_state:
-    st.session_state.calisanlar = [
-        {"id": 1, "ad_soyad": "Ahmet Yılmaz", "tur": "Yevmiye", "ucret": 1200, "giris_tarihi": "2026-10-01", "aktif": True},
-        {"id": 2, "ad_soyad": "Mehmet Demir", "tur": "Aylık", "ucret": 35000, "giris_tarihi": "2026-10-10", "aktif": True}
-    ]
+    st.session_state.calisanlar = []
+  
+       
 if 'puantaj' not in st.session_state:
     st.session_state.puantaj = {}
 
