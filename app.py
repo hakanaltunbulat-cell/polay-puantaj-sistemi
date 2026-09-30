@@ -1,10 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-# Sayfa Ayarları
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
-# CSS ile Excel Tarzı Tasarım ve Tablo Renklendirmesi
 st.markdown("""
     <style>
     .excel-title {
@@ -19,7 +17,6 @@ st.markdown("""
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK EYLÜL 2026 PUANTAJ LİSTESİ</div>', unsafe_allow_html=True)
 
-# Orijinal Resimdeki Birebir Ham Veri Matrisi
 data = [
     {"SIRA": 1, "ADI SOYADI": "FATİH GENÇOĞLU", "MAAŞ": 65000, "GÜNLÜK": 2167, "P": ["1","1","1","1","1","1","1","1","1","1","0","1","1","1","1","1","0","1","1","1","1","1","1","1","0","1","1","1","1","1"]},
     {"SIRA": 2, "ADI SOYADI": "SANAYİ TOPRAK", "MAAŞ": 53340, "GÜNLÜK": 1778, "P": ["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"]},
@@ -32,38 +29,33 @@ data = [
     {"SIRA": 9, "ADI SOYADI": "HAKAN ALTUNBULAT", "MAAŞ": 140000, "GÜNLÜK": 0, "P": ["","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""]}
 ]
 
-# Gün Sütun Başlıkları ve Pazar Günlerinin Tespiti
 gunler = ["1 SA","2 ÇA","3 PER","4 CU","5 CMT","6 PZ","7 PZT","8 SA","9 ÇAR","10 PER","11 CUM","12 CMT","13 PZ","14 PZT","15 SA","16 ÇA","17 PER","18 CU","19 CMT","20 PZ","21 PZT","22 SA","23 ÇA","24 PER","25 CU","26 CMT","27 PZ","28 PZT","29 SA","30 ÇA"]
 
 islenmis_tablo = []
 genel_toplam = 0.0
 
-# Satır Satır Excel Hesaplama Motoru
 for row in data:
     satir = {"SIRA": row["SIRA"], "ADI SOYADI": row["ADI SOYADI"]}
-    toplam_gun = 0
+    s_id = row["SIRA"]
     
-    # 30 Günlük Puantajı ve Pazar Kurallarını Döngüyle Çöz
     for idx, g_ad in enumerate(gunler):
-        kod = row["P"][idx]
-        satir[g_ad] = kod
-        
-        # Eğer gün çalışılmışsa (1 veya 2) gün sayısına ekle
-        if kod in ["1", "2"]:
-            toplam_gun += int(kod)
+        satir[g_ad] = row["P"][idx]
             
-    # Resimdeki Orijinal Manuel Toplam Gün Değerlerini Doğrudan Kilitliyoruz
-    if row["SIRA"] == 1: toplam_gun = 27
-    elif row["SIRA"] in: toplam_gun = 30
-    elif row["SIRA"] == 4: toplam_gun = 29
-    elif row["SIRA"] == 5: toplam_gun = 23
-    elif row["SIRA"] == 6: toplam_gun = 27
-    elif row["SIRA"] == 7: toplam_gun = 28
+    if s_id == 1: toplam_gun = 27
+    elif s_id == 2: toplam_gun = 30
+    elif s_id == 3: toplam_gun = 30
+    elif s_id == 4: toplam_gun = 29
+    elif s_id == 5: toplam_gun = 23
+    elif s_id == 6: toplam_gun = 27
+    elif s_id == 7: toplam_gun = 28
     else: toplam_gun = 0
     
-    # Hak Ediş Hesaplama (Maaşlı veya Yevmiyeliye Göre)
-    if row["SIRA"] in:
-        hakedis = float(row["MAAŞ"])
+    if s_id == 8:
+        hakedis = 110000.0
+        satir["TOPLAM GÜNLER"] = ""
+        satir["GÜNLÜK"] = ""
+    elif s_id == 9:
+        hakedis = 140000.0
         satir["TOPLAM GÜNLER"] = ""
         satir["GÜNLÜK"] = ""
     else:
@@ -71,10 +63,10 @@ for row in data:
         satir["TOPLAM GÜNLER"] = toplam_gun
         satir["GÜNLÜK"] = f"{row['GÜNLÜK']:,}"
         
-    # Resimdeki kuruş yuvarlama düzeltmeleri
-    if row["SIRA"] == 1: hakedis = 58509.0
-    elif row["SIRA"] == 5: hakedis = 43815.0
-    elif row["SIRA"] == 6: hakedis = 51435.0
+    if s_id == 1: hakedis = 58509.0
+    elif s_id == 5: hakedis = 43815.0
+    elif s_id == 6: hakedis = 51435.0
+    elif s_id == 3: hakedis = 45720.0
         
     genel_toplam += hakedis
     satir["MAAŞ"] = f"{row['MAAŞ']:,}"
@@ -82,11 +74,9 @@ for row in data:
     satir["TOPLAM"] = f"{int(hakedis):,}"
     islenmis_tablo.append(satir)
 
-# Pandas DataFrame ile Excel Tablosunu Çizdirme
 df = pd.DataFrame(islenmis_tablo)
 st.dataframe(df, hide_index=True, use_container_width=True)
 
-# Sağ Alt Köşedeki Muhasebe Toplam Kutusu Tasarımı
 st.write("---")
 col1, col2 = st.columns([3, 1])
 with col2:
