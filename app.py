@@ -190,10 +190,9 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             st.success("✔️ Puantaj veritabanı başarıyla güncellendi!")
             st.rerun()
         
-        # --- MAAŞ HESAPLAMA VE RAPORLAMA KISMI ---
+        # --- MAAŞ HESAPLAMA VE RAPORLAMA KISMI (ELIF KOŞULUNUN İÇİNDE) ---
         st.write("---")
         st.markdown(f'<div class="excel-title">💰 {secilen_ay.upper()} {secilen_yil} HAK EDİŞ VE ÖDEME DAĞILIM LİSTESİ</div>', unsafe_allow_html=True)
         
         rapor_verileri = []
         for c in st.session_state.calisanlar:
-            c_id = int(c["id"])
