@@ -25,6 +25,7 @@ if 'aylik_matris' not in st.session_state:
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
+gecerli_kodlar = ["1", "0", "2", "Ç", ""]
 
 if menu == "👤 Çalışan Yönetimi":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -41,7 +42,7 @@ if menu == "👤 Çalışan Yönetimi":
         if submit and ad:
             yeni_id = len(st.session_state.calisanlar) + 1
             st.session_state.calisanlar.append({"id": yeni_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": banka_tutari, "giris_tarihi": giris_tar.strftime('%Y-%m-%d'), "aktif": True})
-            st.success(f"✔️ {ad} başarıyla listeye eklendi!")
+            st.success(f"✔️ {ad} başarıyla eklendi!")
             st.rerun()
 
     st.write("---")
@@ -58,46 +59,36 @@ if menu == "👤 Çalışan Yönetimi":
                 yeni_ucret = st.number_input("Yeni Ücret Tutarı", min_value=0, value=int(calisan_bilgi["ucret"]))
             with col2:
                 yeni_banka = st.number_input("Yeni Banka Tutarı", min_value=0, value=int(calisan_bilgi["banka_tutari"]))
-                yeni_giris = st.date_input("Yeni Giriş Tarihi", datetime.strptime(calisan_bilgi["giris_tarihi"], '%Y-%m-%d').date())
-            guncelle_butonu = st.form_submit_button("🔄 Bilgileri Güncelle")
-            if guncelle_butonu:
+                yeni_giris = st.date_input("Yeni Giriş Tarihi", datetime.strptime(calisan_bilgi__str__ if False else calisan_bilgi["giris_tarihi"], '%Y-%m-%d').date())
+            if st.form_submit_button("🔄 Bilgileri Güncelle"):
                 st.session_state.calisanlar[idx]["tur"] = yeni_tur
                 st.session_state.calisanlar[idx]["ucret"] = yeni_ucret
                 st.session_state.calisanlar[idx]["banka_tutari"] = yeni_banka
                 st.session_state.calisanlar[idx]["giris_tarihi"] = yeni_giris.strftime('%Y-%m-%d')
-                st.success(f"✔️ {secilen_duzenle} isimli çalışanın bilgileri başarıyla güncellendi!")
+                st.success("✔️ Güncellendi!")
                 st.rerun()
-
-    st.write("---")
-    st.write("### 👥 Mevcut Çalışan Listesi")
-    df_calisanlar = pd.DataFrame(st.session_state.calisanlar)
-    if not df_calisanlar.empty:
-        st.dataframe(df_calisanlar[df_calisanlar["aktif"] == True][["id", "ad_soyad", "tur", "ucret", "banka_tutari", "giris_tarihi"]], use_container_width=True)
 
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar if c["aktif"]]
     if aktif_isimler:
         secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", aktif_isimler, key="sil_sec")
-        sil_butonu = st.button("🚨 Seçilen Çalışanı Tamamen Sil")
-        if sil_butonu:
+        if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != secilen_sil]
-            st.success(f"❌ {secilen_sil} sistemden kalıcı olarak temizlendi!")
+            st.success("❌ Silindi!")
             st.rerun()
 
 elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
-    with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
-    with col_a:
-        secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+    with col_y: secilen_yil = st.selectbox("Yıl",)
+    with col_a: secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
-    st.info("💡 Kullanım: Hücrelere tıklayarak açılan listeden sadece geçerli kodları (1, 0, 2, Ç) seçebilirsiniz.")
+    st.info("💡 Kullanım: Hücrelere klavyeden doğrudan yazabilirsiniz. Hatalı girilen kodlar kaydetme esnasında temizlenir.")
     
-    matris_data = []
+    matris_data =
     sutun_haritalama = {}
     config_sutunlar = {"SIRA": st.column_config.NumberColumn(disabled=True), "ADI SOYADI": st.column_config.TextColumn(disabled=True)}
     
@@ -109,41 +100,39 @@ elif menu == "📅 Puantaj Girişi":
                 except: wd = 0
                 s_adi = f"{gun} {gun_kisa_adlar[wd]}"
                 sutun_haritalama[gun] = s_adi
-                config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=["", "1", "0", "2", "Ç"], width="small")
+                config_sutunlar[s_adi] = st.column_config.TextColumn(width="small")
                 matris_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
-                if matris_key not in st.session_state.aylik_matris:
-                    st.session_state.aylik_matris[matris_key] = ""
+                if matris_key not in st.session_state.aylik_matris: st.session_state.aylik_matris[matris_key] = ""
                 satir[s_adi] = st.session_state.aylik_matris[matris_key]
             matris_data.append(satir)
 
     if matris_data:
         df_matris = pd.DataFrame(matris_data)
-        guncel_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_editor_{secilen_yil}_{ay_no}")
+        guncel_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"m_edit_{secilen_yil}_{ay_no}")
         if st.button("💾 Tüm Aylık Puantaj Değişikliklerini Kaydet"):
             for _, row in guncel_tablo.iterrows():
                 c_id = row["SIRA"]
                 for gun in range(1, gun_sayisi + 1):
                     s_adi = sutun_haritalama[gun]
+                    girilen_deger = str(row[s_adi]).strip().upper()
                     matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    st.session_state.aylik_matris[matris_key] = str(row[s_adi]).strip().upper()
-            st.success("✔️ Tüm değişiklikler başarıyla hafızaya kaydedildi!")
+                    st.session_state.aylik_matris[matris_key] = girilen_deger if girilen_deger in gecerli_kodlar else ""
+            st.success("✔️ Değişiklikler doğrulandı ve hafızaya işlendi!")
             st.rerun()
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
-    with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
-    with col_ra:
-        r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+    with col_ry: r_yil = st.selectbox("Rapor Yılı",)
+    with col_ra: r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
     weekday, r_gun_sayisi = calendar.monthrange(r_yil, r_ay_no)
-    rapor_verisi = []
+    rapor_verisi =
 
     for c in st.session_state.calisanlar:
         if c["aktif"]:
-            toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, {}, []
+            toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, {},
             giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
             for gun in range(1, r_gun_sayisi + 1):
                 try: m_tarih = datetime(r_yil, r_ay_no, gun).date()
@@ -160,3 +149,6 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             for pzr in pazar_gunleri:
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
+                elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
+            hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
+            banka = min(float(c["banka_tutari"]), float(hak_edis))
