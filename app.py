@@ -2,16 +2,22 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Sayfa Genişlik Ayarı ve Başlık
 st.set_page_config(page_title="Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
-
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
-# 1. VERİ TABANI SİMÜLASYONU (Hafızada Tutma)
+# 1. GÜNCEL ÇALISAN LİSTESİ (Her çalışana özel banka_tutari eklendi)
 if 'calisanlar' not in st.session_state:
-    st.session_state.calisanlar = []
-  
-       
+    st.session_state.calisanlar = [
+        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Aylık", "ucret": 45700, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2094, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1460, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Aylık", "ucret": 60000, "banka_tutari": 15000, "giris_tarihi": "2026-09-03", "aktif": True},
+        {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True}
+    ]
 if 'puantaj' not in st.session_state:
     st.session_state.puantaj = {}
 
@@ -26,10 +32,11 @@ if menu == "👤 Çalışan Yönetimi":
     with st.form("yeni_calisan", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            ad = st.text_input("Adı Soyadı")
+            ad = st.text_input("Adı Soyadı").upper()
             tur = st.selectbox("Maaş Tipi", ["Yevmiye", "Aylık"])
-        with col2:
             ucret = st.number_input("Ücret Tutarı (Günlük/Aylık)", min_value=0, value=1000)
+        with col2:
+            banka_tutari = st.number_input("Bu İşçinin Bankaya Yatacak Sabit Tutarı", min_value=0, value=15000, step=1000)
             giris_tar = st.date_input("İşe Giriş Tarihi", datetime.now())
             
         submit = st.form_submit_button("💾 Çalışanı Sisteme Kaydet")
@@ -37,15 +44,29 @@ if menu == "👤 Çalışan Yönetimi":
         if submit and ad:
             yeni_id = len(st.session_state.calisanlar) + 1
             st.session_state.calisanlar.append({
-                "id": yeni_id, "ad_soyad": ad, "tur": tur, 
-                "ucret": ucret, "giris_tarihi": giris_tar.strftime('%Y-%m-%d'), "aktif": True
+                "id": yeni_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, 
+                "banka_tutari": banka_tutari, "giris_tarihi": giris_tar.strftime('%Y-%m-%d'), "aktif": True
             })
-            st.success(f"✔️ {ad} başarıyla eklendi!")
+            st.success(f"✔️ {ad} başarıyla listeye eklendi!")
 
     st.write("### 👥 Mevcut Çalışan Listesi")
     df_calisanlar = pd.DataFrame(st.session_state.calisanlar)
     if not df_calisanlar.empty:
-        st.dataframe(df_calisanlar[["id", "ad_soyad", "tur", "ucret", "giris_tarihi", "aktif"]], use_container_width=True)
+        st.dataframe(df_calisanlar[df_calisanlar["aktif"] == True][["id", "ad_soyad", "tur", "ucret", "banka_tutari", "giris_tarihi"]], use_container_width=True)
+
+    # --- İŞÇİ KALICI SİLME ---
+    st.write("---")
+    st.subheader("🗑️ Çalışan Sil")
+    aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar if c["aktif"]]
+    
+    if aktif_isimler:
+        secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", aktif_isimler)
+        sil_butonu = st.button("🚨 Seçilen Çalışanı Tamamen Sil")
+        
+        if sil_butonu:
+            st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != secilen_sil]
+            st.success(f"❌ {secilen_sil} sistemden kalıcı olarak temizlendi!")
+            st.rerun()
 
 # --- SAYFA 2: PUANTAJ GİRİŞİ ---
 elif menu == "📅 Puantaj Girişi":
@@ -55,73 +76,68 @@ elif menu == "📅 Puantaj Girişi":
     
     st.info("💡 Kodlar: 1 (Çalıştı), 0 (Gelmedi), 2 (Çift Vardiya), Ç (Çıkış)")
     
-    # Form Düzeni
     with st.form("puantaj_form"):
+        any_active = False
         for c in st.session_state.calisanlar:
             if c["aktif"]:
+                any_active = True
                 giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
                 key = f"{tarih_str}_{c['id']}"
                 
-                # KURAL: Giriş tarihinden öncesi kilitlenir hesaplanmaz
                 if secilen_tarih < giris_tarihi_obj:
                     st.text(f"🔒 {c['ad_soyad']} (Bu tarihte henüz işe başlamamıştı - Giriş: {c['giris_tarihi']})")
                 else:
                     mevcut_kod = st.session_state.puantaj.get(key, "1")
                     st.selectbox(f"👤 {c['ad_soyad']} ({c['tur']})", ["1", "0", "2", "Ç"], index=["1", "0", "2", "Ç"].index(mevcut_kod), key=key)
                     
-        kaydet = st.form_submit_button("🔒 Günlük Puantajı Onayla ve Kaydet")
-        if kaydet:
-            for c in st.session_state.calisanlar:
-                key = f"{tarih_str}_{c['id']}"
-                if key in st.session_state:
-                    st.session_state.puantaj[key] = st.session_state[key]
-            st.success(f"📊 {tarih_str} tarihli puantaj başarıyla güncellendi!")
+        if any_active:
+            kaydet = st.form_submit_button("🔒 Günlük Puantajı Onayla ve Kaydet")
+            if kaydet:
+                for c in st.session_state.calisanlar:
+                    key = f"{tarih_str}_{c['id']}"
+                    if key in st.session_state:
+                        st.session_state.puantaj[key] = st.session_state[key]
+                st.success(f"📊 {tarih_str} tarihli puantaj başarıyla güncellendi!")
 
 # --- SAYFA 3: MAAŞ & ÖDEME RAPORU ---
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     
-    banka_girdisi = st.number_input("İşçi Başına Bankaya Yatırılacak Sabit Tutar", value=15000, step=1000)
-    
-    rapor_verisi = []
+    rapor_verisi =
     
     for c in st.session_state.calisanlar:
         toplam_yevmiye = 0
         giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
         is_cikis_yapti = False
         
-        # Puantajları tarihe göre sıralayıp tara
         sirali_puantajlar = sorted(st.session_state.puantaj.items())
         
         for k, v in sirali_puantajlar:
             if k.endswith(f"_{c['id']}"):
-                p_tarih_str = k.split("_")[0]
+                p_tarih_str = k.split("_")
                 p_tarih_obj = datetime.strptime(p_tarih_str, '%Y-%m-%d').date()
                 
-                # Yeni Başlayan Kuralı Kontrolü
                 if p_tarih_obj < giris_tarihi_obj:
                     continue
-                
-                # İşten Çıkış Kontrolü
                 if is_cikis_yapti:
                     continue
                 if v == "Ç":
                     is_cikis_yapti = True
-                    continue # Çıktığı gün ve sonrası hesaplanmaz
+                    continue
                 
-                # Yevmiye Ekleme
                 if v == "1": toplam_yevmiye += 1
                 elif v == "2": toplam_yevmiye += 2
 
-        # Hak Ediş Hesaplama Kısmı
         if c["tur"] == "Yevmiye":
             hak_edis = toplam_yevmiye * c["ucret"]
         else:
-            hak_edis = c["ucret"] # Aylık çalışan sabit alır (Çıkış durumu harici)
+            hak_edis = c["ucret"]
             if is_cikis_yapti:
-                hak_edis = c["ucret"] / 2 # Basit kıst maaş örneği
+                hak_edis = c["ucret"] / 2
                 
-        banka = min(float(banka_girdisi), float(hak_edis))
+        # 📢 DEĞİŞİKLİK: Banka tutarı artık üstteki kutudan değil, çalışanın kendi profilinden alınıyor
+        iscinin_kendi_bankasi = float(c["banka_tutari"])
+        banka = min(iscinin_kendi_bankasi, float(hak_edis))
         elden = hak_edis - banka
         
         rapor_verisi.append({
@@ -133,14 +149,5 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             "Elden Verilecek": f"{elden:,.2f} ₺"
         })
         
-    st.table(pd.DataFrame(rapor_verisi))
-  # --- İŞÇİ SİLME ALANI ---
-    st.write("---")
-    st.subheader("🗑️ Çalışan Sil")
-    silinecek_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", silinecek_isimler)
-    
-    sil_butonu = st.button("🚨 Seçilen Çalışanı Tamamen Sil")
-    if sil_butonu:
-        st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != secilen_sil]
-        st.success(f"❌ {secilen_sil} sistemden tamamen silindi! Sayfayı yenileyebilirsiniz.")
+    if rapor_verisi:
+        st.table(pd.DataFrame(rapor_verisi))
