@@ -53,7 +53,7 @@ if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_stat
     else:
         st.session_state.aylik_matris = {}
         for c in st.session_state.calisanlar:
-            for g in range(1, 31): 
+            for g in range(1, 32): 
                 st.session_state.aylik_matris[f"2026_9_{c['id']}_{g}"] = "1"
             st.session_state.aylik_matris[f"2026_9_{c['id']}_11"] = "0"
             st.session_state.aylik_matris[f"2026_9_{c['id']}_17"] = "0"
@@ -185,7 +185,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     df_matris = pd.DataFrame(matris_data)
     
     st.markdown("### 📝 Puantaj Düzenleme Tablosu")
-    st.caption("💡 Hücreye çift tıklayıp durum seçebilirsiniz. Değerler: 1: Çalıştı, 0: Gelmedi, 2: Çift Yevmiye, Ç: Çeyrek")
+    st.caption("💡 Hücreye çift tıklayıp durum seçebilirsiniz. Değerler: 1: Çalıştı, 0: Gelmedi, 2: Çift Yevmiye, Ç: Çıkış")
     
     edited_df = st.data_editor(
         df_matris,
