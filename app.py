@@ -8,7 +8,7 @@ st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
-        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
+        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750, "giris_tarihi": "2026-09-01", "aktif": True},
         {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
         {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Aylık", "ucret": 45700, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
         {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2094, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
@@ -122,7 +122,9 @@ elif menu == "💰 Maaş & Ödeme Raporu":
     r_ay = st.selectbox("Rapor Ayı Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
     weekday, r_gun_sayisi = calendar.monthrange(secilen_yil, r_ay_no)
+    
     rapor_verisi = list()
+    top_hakedis, top_banka, top_elden = 0.0, 0.0, 0.0
 
     for c in st.session_state.calisanlar:
         if c["aktif"]:
@@ -144,8 +146,15 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
                 elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
+            
             hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
             banka = min(float(c["banka_tutari"]), float(hak_edis))
-            rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{(hak_edis - banka):,.2f} ₺"})
-    if rapor_verisi:
-        st.table(pd.DataFrame(rapor_verisi))
+            elden = float(hak_edis - banka)
+            
+            top_hakedis += hak_edis
+            top_banka += banka
+            top_elden += elden
+            
+            rapor_verisi.append({
+                "İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çal. Gün": toplam_yevmiye,
+                "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{elden:,.2f} ₺"
