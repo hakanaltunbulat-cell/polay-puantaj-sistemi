@@ -21,32 +21,30 @@ st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ VE HA
 
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
-        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "aktif": True},
-        {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "aktif": True},
-        {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Yevmiye", "ucret": 1524, "aktif": True},
-        {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2167, "aktif": True},
-        {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1905, "aktif": True},
-        {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1905, "aktif": True},
-        {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Yevmiye", "ucret": 2000, "aktif": True},
-        {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "aktif": True},
-        {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "aktif": True}
+        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750, "aktif": True},
+        {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000, "aktif": True},
+        {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Yevmiye", "ucret": 1524, "banka_tutari": 15000, "aktif": True},
+        {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "aktif": True},
+        {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000, "aktif": True},
+        {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000, "aktif": True},
+        {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Yevmiye", "ucret": 2000, "banka_tutari": 15000, "aktif": True},
+        {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000, "aktif": True},
+        {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000, "aktif": True}
     ]
 
 if 'aylik_matris' not in st.session_state:
     st.session_state.aylik_matris = {}
-    # Fatih Bey'in örnek puantaj verisini hazır yüklüyoruz
     for g in range(1, 31):
-        k = "1"
-        if g == 11 or g == 17 or g == 25: k = "0"
-        st.session_state.aylik_matris[f"2026_9_1_{g}"] = k
+        st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
+    st.session_state.aylik_matris["2026_9_1_11"] = "0"
+    st.session_state.aylik_matris["2026_9_1_17"] = "0"
+    st.session_state.aylik_matris["2026_9_1_25"] = "0"
 
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
-secilen_yil = 2026
-ay_no = 9
-gun_sayisi = 30
+secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
 
 if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -54,10 +52,11 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         ad = st.text_input("Adı Soyadı").upper()
         tur = st.selectbox("Maaş Tipi", ["Yevmiye", "Aylık"])
         ucret = st.number_input("Ücret Tutarı (Günlük/Sabit Aylık)", min_value=0, value=2000)
+        b_tut = st.number_input("Bankaya Yatacak Sabit Tutar", min_value=0, value=15000, step=1000)
         if st.form_submit_button("💾 Kaydet") and ad:
             y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
-            st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "aktif": True})
-            st.success(f"✔️ {ad} eklendi!")
+            st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut, "aktif": True})
+            st.success("✔️ Eklendi!")
             st.rerun()
 
     st.write("---")
@@ -70,9 +69,11 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         with st.form("duzen_form"):
             y_tur = st.selectbox("Yeni Maaş Tipi", ["Yevmiye", "Aylık"], index=["Yevmiye", "Aylık"].index(c_bilgi["tur"]))
             y_ucret = st.number_input("Yeni Ücret", min_value=0, value=int(c_bilgi["ucret"]))
+            y_banka = st.number_input("Yeni Banka Tutarı", min_value=0, value=int(c_bilgi["banka_tutari"]))
             if st.form_submit_button("🔄 Bilgileri Güncelle"):
                 st.session_state.calisanlar[idx]["tur"] = y_tur
                 st.session_state.calisanlar[idx]["ucret"] = y_ucret
+                st.session_state.calisanlar[idx]["banka_tutari"] = y_banka
                 st.success("✔️ Güncellendi!")
                 st.rerun()
 
@@ -82,7 +83,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         sil_ad = st.selectbox("Silinecek Kişi:", isimler, key="sil_box")
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
-            st.success("❌ Sistemden temizlendi!")
+            st.success("❌ Silindi!")
             st.rerun()
 
 elif islem == "📅 Puantaj Matrisi & Rapor":
@@ -119,29 +120,21 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     st.write("---")
     st.subheader("💰 Hak Ediş ve Ödeme Dağılım Listesi")
     rapor_verisi = []
-    t_hakedis = 0.0
+    t_hakedis, t_banka, t_elden = 0.0, 0.0, 0.0
     
     for c in st.session_state.calisanlar:
-        toplam_yevmiye = 0
-        is_cikis_yapti = False
-        cikis_gunu = 30
-        haftalik_calisma = {}
-        pazar_gunleri = []
+        toplam_yevmiye, is_cikis, cikis_gunu, haftalik_calisma, pazar_gunleri = 0, False, 30, {}, []
         
         for gun in range(1, gun_sayisi + 1):
             v = st.session_state.aylik_matris.get(f"{secilen_yil}_{ay_no}_{c['id']}_{gun}", "").strip().upper()
-            if is_cikis_yapti: continue
-            if v == "Ç":
-                is_cikis_yapti = True
-                cikis_gunu = gun
-                continue
+            if is_cikis: continue
+            if v == "Ç": is_cikis, cikis_gunu = True, gun; continue
             
             m_tarih = datetime(secilen_yil, ay_no, gun).date()
             h_key = m_tarih.strftime('%Y-W%U')
             if h_key not in haftalik_calisma: haftalik_calisma[h_key] = 0
             
-            if m_tarih.weekday() == 6:
-                pazar_gunleri.append({"h_key": h_key, "kod": v})
+            if m_tarih.weekday() == 6: pazar_gunleri.append({"h_key": h_key, "kod": v})
             else:
                 if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_key] += 1
                 elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
@@ -153,23 +146,29 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
 
         if c["tur"] == "Yevmiye":
             h_edis = float(toplam_yevmiye * c["ucret"])
-            # Özel yuvarlama kuralı (Fatih Bey'in orijinal verisi korumak için)
             if c["id"] == 1 and toplam_yevmiye == 27: h_edis = 58509.0
         else:
-            if is_cikis_yapti:
-                # KURAL: Kim olursa olsun Çıkış verildiyse o güne kadar KIST MAAŞ hesaplanır
-                h_edis = float((cikis_gunu / 30.0) * c["ucret"])
-            else:
-                h_edis = float(c["ucret"])
+            h_edis = float((cikis_gunu / 30.0) * c["ucret"]) if is_cikis else float(c["ucret"])
 
+        # Banka ve Elden Dağılım Hesabı
+        bnk = min(float(c["banka_tutari"]), float(h_edis))
+        eld = float(h_edis - bnk)
+        
         t_hakedis += h_edis
+        t_banka += bnk
+        t_elden += eld
+        
         rapor_verisi.append({
             "İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺",
             "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)",
-            "Toplam Hak Ediş": f"{int(h_edis):,} ₺"
+            "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"
         })
 
     if rapor_verisi:
+        rapor_verisi.append({
+            "İşçi Adı": "➡️ GENEL TOPLAM", "Tür": "---", "Maaş / Ücret": "---", "Hesaplanan Gün": "---",
+            "Toplam Hak Ediş": f"{int(t_hakedis):,} ₺", "Bankaya Yatacak": f"{int(t_banka):} ₺", "Elden Verilecek": f"{int(t_elden):} ₺"
+        })
         st.table(pd.DataFrame(rapor_verisi))
         st.write("---")
         col1, col2 = st.columns(2)
@@ -177,6 +176,6 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             st.markdown(f"""
                 <table style="width:100%; border:2px solid black; font-weight:bold; font-size:16px; background-color:#fff2cc; text-align:center;">
                     <tr><td style="padding:8px; border:1px solid black; width:50%;">ATEŞÇİ</td><td style="padding:8px; border:1px solid black; width:50%;">30,000</td></tr>
-                    <tr style="background-color:#f8cbad;"><td style="padding:8px; border:1px solid black;">TOPLAM</td><td style="padding:8px; border:1px solid black;">{int(t_hakedis + 30000):,} ₺</td></tr>
+                    <tr style="background-color:#f8cbad;"><td style="padding:8px; border:1px solid black;">GENEL TOPLAM + ATEŞÇİ</td><td style="padding:8px; border:1px solid black;">{int(t_hakedis + 30000):,} ₺</td></tr>
                 </table>
             """, unsafe_allow_html=True)
