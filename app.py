@@ -49,15 +49,13 @@ if menu == "👤 Çalışan Yönetimi":
             })
             st.success(f"✔️ {ad} başarıyla listeye eklendi!")
 
-    # 🛠️ --- YENİ BÖLÜM: ÇALIŞAN BİLGİLERİNİ DÜZENLEME ALANI ---
+    # 🛠️ --- ÇALIŞAN BİLGİLERİNİ DÜZENLEME ALANI ---
     st.write("---")
     st.subheader("✏️ Çalışan Bilgilerini Düzenle / Güncelle")
     aktif_isimler_duzenle = [c["ad_soyad"] for c in st.session_state.calisanlar if c["aktif"]]
     
     if aktif_isimler_duzenle:
         secilen_duzenle = st.selectbox("Bilgilerini değiştirmek istediğiniz çalışanı seçin:", aktif_isimler_duzenle, key="duzenle_sec")
-        
-        # Seçilen çalışanın mevcut bilgilerini bulalım
         calisan_bilgi = next(c for c in st.session_state.calisanlar if c["ad_soyad"] == secilen_duzenle)
         
         with st.form("calisan_duzenle_form"):
@@ -148,8 +146,8 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         
         for k, v in sirali_puantajlar:
             if k.endswith(f"_{c['id']}"):
-                p_tarih_str = k.split("_")
-                p_tarih_obj = datetime.strptime(p_tarih_str[0], '%Y-%m-%d').date()
+                p_tarih_str = k.split("_")[0]
+                p_tarih_obj = datetime.strptime(p_tarih_str, '%Y-%m-%d').date()
                 
                 if p_tarih_obj < giris_tarihi_obj:
                     continue
@@ -203,3 +201,4 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         })
         
     if rapor_verisi:
+        st.table(pd.DataFrame(rapor_verisi))
