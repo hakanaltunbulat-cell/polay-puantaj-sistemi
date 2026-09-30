@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
-# 1. GÜNCEL ÇALISAN LİSTESİ (Her çalışana özel banka_tutari eklendi)
+# 1. GÜNCEL ÇALIŞAN LİSTESİ (Kişiye özel banka tutarları eklendi)
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
         {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
@@ -21,7 +21,7 @@ if 'calisanlar' not in st.session_state:
 if 'puantaj' not in st.session_state:
     st.session_state.puantaj = {}
 
-# 2. SOL MENÜ (NAVİGASYON)
+# 2. SOL MENÜ
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 
@@ -103,18 +103,23 @@ elif menu == "📅 Puantaj Girişi":
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     
-    rapor_verisi =
+    rapor_verisi = []
     
     for c in st.session_state.calisanlar:
         toplam_yevmiye = 0
         giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
         is_cikis_yapti = False
         
+        # Pazar kuralı takibi için haftalık çalışma gün sayısı sözlüğü
+        # Örn: '2026-W40' -> hafta içi çalışılan gün sayısı
+        haftalik_calisma = {}
+        pazar_gunleri = []
+        
         sirali_puantajlar = sorted(st.session_state.puantaj.items())
         
         for k, v in sirali_puantajlar:
             if k.endswith(f"_{c['id']}"):
-                p_tarih_str = k.split("_")
+                p_tarih_str = k.split("_")[0]
                 p_tarih_obj = datetime.strptime(p_tarih_str, '%Y-%m-%d').date()
                 
                 if p_tarih_obj < giris_tarihi_obj:
@@ -125,8 +130,34 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     is_cikis_yapti = True
                     continue
                 
-                if v == "1": toplam_yevmiye += 1
-                elif v == "2": toplam_yevmiye += 2
+                # Hangi hafta olduğunu bul (Yıl ve Hafta Numarası)
+                hafta_key = p_tarih_obj.strftime('%Y-W%U')
+                if hafta_key not in haftalik_calisma:
+                    haftalik_calisma[hafta_key] = 0
+                
+                # Pazar günü kontrolü (Weekday 6 = Pazar)
+                if p_tarih_obj.weekday() == 6:
+                    pazar_gunleri.append({"tarih": p_tarih_obj, "hafta_key": hafta_key, "kod": v})
+                else:
+                    if v == "1": 
+                        toplam_yevmiye += 1
+                        haftalik_calisma[hafta_key] += 1
+                    elif v == "2": 
+                        toplam_yevmiye += 2
+                        haftalik_calisma[hafta_key] += 1
+
+        # Pazar yevmiyesi kuralı hesaplaması: "3 gün çalışıp 4 gün gelmeyene pazar 0 yazılır"
+        # Yani Pazar yevmiyesini alabilmesi için hafta içi en az 4 gün çalışmış olması gerekir.
+        for pazar in pazar_gunleri:
+            if pazar["kod"] in ["1", "2"]:
+                # Pazar günü kendisi zaten çalıştıysa yevmiyesini alır
+                if pazar["kod"] == "1": toplam_yevmiye += 1
+                elif pazar["kod"] == "2": toplam_yevmiye += 2
+            else:
+                # Pazar günü çalışmadıysa, o hafta içi en her halükarda en az 4 gün gelmiş mi?
+                hafta_ici_gelme = haftalik_calisma.get(pazar["hafta_key"], 0)
+                if hafta_ici_gelme >= 4:
+                    toplam_yevmiye += 1 # Pazar yevmiyesi hak etti
 
         if c["tur"] == "Yevmiye":
             hak_edis = toplam_yevmiye * c["ucret"]
@@ -135,7 +166,6 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             if is_cikis_yapti:
                 hak_edis = c["ucret"] / 2
                 
-        # 📢 DEĞİŞİKLİK: Banka tutarı artık üstteki kutudan değil, çalışanın kendi profilinden alınıyor
         iscinin_kendi_bankasi = float(c["banka_tutari"])
         banka = min(iscinin_kendi_bankasi, float(hak_edis))
         elden = hak_edis - banka
