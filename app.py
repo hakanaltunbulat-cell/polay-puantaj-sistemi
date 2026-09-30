@@ -20,7 +20,7 @@ if 'calisanlar' not in st.session_state:
     ]
 
 if 'aylik_matris' not in st.session_state:
-    st.session_state.aylik_matris = dict()
+    st.session_state.aylik_matris = {}
 
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
@@ -80,15 +80,15 @@ if menu == "👤 Çalışan Yönetimi":
 elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
-    with col_y: secilen_yil = st.selectbox("Yıl", [2026, 2027, 2025])
+    with col_y: secilen_yil = st.selectbox("Yıl", [2026, 2027])
     with col_a: secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
-    st.info("💡 Hızlı Kullanım: Hücrelere tıklayıp klavyeden doğrudan 1, 0, 2 veya Ç yazabilirsiniz. Başka bir rakam veya harf girildiğinde sistem otomatik temizler.")
+    st.info("💡 Kullanım: Hücrelere klavyeden doğrudan yazabilirsiniz. Hatalı kodlar kaydederken otomatik temizlenir.")
     
-    matris_data = list()
-    sutun_haritalama = dict()
+    matris_data = []
+    sutun_haritalama = {}
     config_sutunlar = {"SIRA": st.column_config.NumberColumn(disabled=True), "ADI SOYADI": st.column_config.TextColumn(disabled=True)}
     
     for c in st.session_state.calisanlar:
@@ -108,7 +108,7 @@ elif menu == "📅 Puantaj Girişi":
 
     if matris_data:
         df_matris = pd.DataFrame(matris_data)
-        guncel_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_final_{secilen_yil}_{ay_no}")
+        guncel_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_v_final_{secilen_yil}_{ay_no}")
         if st.button("💾 Tüm Aylık Puantaj Değişikliklerini Kaydet"):
             for _, row in guncel_tablo.iterrows():
                 c_id = int(row["SIRA"])
@@ -123,16 +123,16 @@ elif menu == "📅 Puantaj Girişi":
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
-    with col_ry: r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2025])
+    with col_ry: r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
     with col_ra: r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
     weekday, r_gun_sayisi = calendar.monthrange(r_yil, r_ay_no)
-    rapor_verisi = list()
+    rapor_verisi = []
 
     for c in st.session_state.calisanlar:
         if c["aktif"]:
-            toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, dict(), list()
+            toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, {}, []
             giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
             for gun in range(1, r_gun_sayisi + 1):
                 try: m_tarih = datetime(r_yil, r_ay_no, gun).date()
@@ -151,4 +151,5 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
                 elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
             hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
-            banka = min(float(c["banka_turn"]) if False else float(c["banka_tutari"]), float(hak_edis))
+            banka = min(float(c["banka_tutari"]), float(hak_edis))
+            rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{(hak_edis - banka):,.2f} ₺"})
