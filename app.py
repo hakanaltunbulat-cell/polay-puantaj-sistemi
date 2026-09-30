@@ -25,6 +25,7 @@ if 'aylik_matris' not in st.session_state:
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
+izin_verilen_kodlar = ["", "1", "0", "2", "Ç"]
 
 if menu == "👤 Çalışan Yönetimi":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -89,14 +90,13 @@ elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
     with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
+        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2025])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
-    ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
-    ay_no = ay_numaralari[secilen_ay]
+    ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
-    st.info("💡 Kullanım: Hücrelerin içine çift tıklayarak kodları (1, 0, 2, Ç) yazın. İşlem bitince alttaki kaydet butonuna basın.")
+    st.info("💡 Sadece 1, 0, 2, Ç kodları kabul edilir. Yanlış girilen kodlar kaydetme esnasında otomatik temizlenir.")
     
     matris_data = []
     sutun_haritalama = {}
@@ -122,15 +122,20 @@ elif menu == "📅 Puantaj Girişi":
                 c_id = row["SIRA"]
                 for gun in range(1, gun_sayisi + 1):
                     s_adi = sutun_haritalama[gun]
+                    girilen_değer = str(row[s_adi]).strip().upper()
                     matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    st.session_state.aylik_matris[matris_key] = str(row[s_adi]).strip()
-            st.success(f"✔️ {secilen_ay} {secilen_yil} dönemine ait tüm puantaj tablosu başarıyla kaydedildi!")
+                    if girilen_değer in izin_verilen_kodlar:
+                        st.session_state.aylik_matris[matris_key] = girilen_değer
+                    else:
+                        st.session_state.aylik_matris[matris_key] = ""
+            st.success(f"✔️ {secilen_ay} {secilen_yil} dönemine ait puantaj tablosu doğrulandı ve kaydedildi!")
+            st.rerun()
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
     with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2025])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -145,7 +150,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             for gun in range(1, r_gun_sayisi + 1):
                 try: m_tarih = datetime(r_yil, r_ay_no, gun).date()
                 except: continue
-                v = st.session_state.aylik_matris.get(f"{r_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip()
+                v = st.session_state.aylik_matris.get(f"{r_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip().upper()
                 if m_tarih < giris_tarihi_obj or is_cikis: continue
                 if v == "Ç": is_cikis = True; continue
                 h_key = m_tarih.strftime('%Y-W%U')
@@ -157,5 +162,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             for pzr in pazar_gunleri:
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
-                elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
-            hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
