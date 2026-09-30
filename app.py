@@ -155,7 +155,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         "ADI SOYADI": st.column_config.TextColumn(disabled=True, width="medium")
     }
     
-    # Günlük selectbox ayarlarını sütunlara bağlama
+    # Günlük sütun ayarları
     for gun in range(1, gun_sayisi + 1):
         wd = datetime(secilen_yil, ay_no, gun).weekday()
         gun_adi = gun_kisa_adlar[wd]
