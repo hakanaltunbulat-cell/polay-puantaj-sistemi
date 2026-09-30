@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Polay Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
+# 1. GÜNCEL ÇALIŞAN LİSTESİ
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
         {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
@@ -17,12 +18,15 @@ if 'calisanlar' not in st.session_state:
         {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
         {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True}
     ]
-if 'puantaj' not in st.session_state:
-    st.session_state.puantaj = {}
+
+# Matris yapısı için puantaj hafızası [işçi_id][gün_numarası] = kod
+if 'aylik_matris' not in st.session_state:
+    st.session_state.aylik_matris = {}
 
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 
+# --- SAYFA 1: ÇALIŞAN YÖNETİMİ ---
 if menu == "👤 Çalışan Yönetimi":
     st.subheader("➕ Yeni Çalışan Ekle")
     with st.form("yeni_calisan", clear_on_submit=True):
@@ -82,80 +86,134 @@ if menu == "👤 Çalışan Yönetimi":
             st.success(f"❌ {secilen_sil} sistemden kalıcı olarak temizlendi!")
             st.rerun()
 
+# --- SAYFA 2: PUANTAJ GİRİŞİ (YENİ EXCEL / PDF MATRİS GÖRÜNÜMÜ) ---
 elif menu == "📅 Puantaj Girişi":
-    st.subheader("Günlük Puantaj Giriş Matrisi")
-    secilen_tarih = st.date_input("Puantaj Tarihi Seçin", datetime.now())
-    tarih_str = secilen_tarih.strftime('%Y-%m-%d')
-    st.info("💡 Kodlar: 1 (Çalıştı), 0 (Gelmedi), 2 (Çift Vardiya), Ç (Çıkış)")
-    with st.form("puantaj_form"):
-        any_active = False
-        for c in st.session_state.calisanlar:
-            if c["aktif"]:
-                any_active = True
-                giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
-                key = f"{tarih_str}_{c['id']}"
-                if secilen_tarih < giris_tarihi_obj:
-                    st.text(f"🔒 {c['ad_soyad']} (Bu tarihte henüz işe başlamamıştı - Giriş: {c['giris_tarihi']})")
-                else:
-                    mevcut_kod = st.session_state.puantaj.get(key, "1")
-                    st.selectbox(f"👤 {c['ad_soyad']} ({c['tur']})", ["1", "0", "2", "Ç"], index=["1", "0", "2", "Ç"].index(mevcut_kod), key=key)
-        if any_active:
-            kaydet = st.form_submit_button("🔒 Günlük Puantajı Onayla ve Kaydet")
-            if kaydet:
-                for c in st.session_state.calisanlar:
-                    key = f"{tarih_str}_{c['id']}"
-                    if key in st.session_state:
-                        st.session_state.puantaj[key] = st.session_state[key]
-                st.success(f"📊 {tarih_str} tarihli puantaj başarıyla güncellendi!")
+    st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
+    
+    col_y, col_a = st.columns(2)
+    with col_y:
+        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
+    with col_a:
+        secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8) # Varsayılan Eylül
+        
+    ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
+    ay_no = ay_numaralari[secilen_ay]
+    
+    st.info("💡 Tablo Kullanımı: Doğrudan hücrelerin içine tıklayıp kodları girin. Kodlar: 1 (Çalıştı), 0 (Gelmedi), 2 (Çift Vardiya), Ç (Çıkış)")
+    
+    # Seçilen aya göre gün sütunlarını oluştur (1'den 30/31'e kadar)
+    if ay_no in: gun_sayisi = 30
+    elif ay_no == 2: gun_sayisi = 28
+    else: gun_sayisi = 31
+    
+    # Boş matris verisini hazırla
+    matris_data = []
+    for c in st.session_state.calisanlar:
+        if c["aktif"]:
+            satir = {"SIRA": c["id"], "ADI SOYADI": c["ad_soyad"]}
+            for gun in range(1, gun_sayisi + 1):
+                matris_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
+                # Eğer hafızada kayıt yoksa varsayılan olarak "1" koy
+                if matris_key not in st.session_state.aylik_matris:
+                    st.session_state.aylik_matris[matris_key] = "1"
+                satir[f"{gun}"] = st.session_state.aylik_matris[matris_key]
+            matris_data.append(satir)
+            
+    df_matris = pd.DataFrame(matris_data)
+    
+    # Excel gibi düzenlenebilir interaktif tablo (data_editor) ekrana basılıyor
+    guncel_tablo = st.data_editor(df_matris, hide_index=True, disabled=["SIRA", "ADI SOYADI"], use_container_width=True)
+    
+    # Düzenlenen verileri otomatik hafızaya geri işle
+    if st.button("💾 Tüm Aylık Puantaj Değişikliklerini Kaydet"):
+        for _, row in guncelle_tablo.iterrows():
+            c_id = row["SIRA"]
+            for gun in range(1, gun_sayisi + 1):
+                matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
+                st.session_state.aylik_matris[matris_key] = str(row[f"{gun}"])
+        st.success(f"✔️ {secilen_ay} {secilen_yil} dönemine ait tüm puantaj tablosu başarıyla kilitlendi!")
 
+# --- SAYFA 3: MAAŞ & ÖDEME RAPORU ---
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
+    
+    col_ry, col_ra = st.columns(2)
+    with col_ry:
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
+    with col_ra:
+        r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+        
+    ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
+    r_ay_no = ay_numaralari[r_ay]
+    
+    if r_ay_no in: r_gun_sayisi = 30
+    elif r_ay_no == 2: r_gun_sayisi = 28
+    else: r_gun_sayisi = 31
+    
     rapor_verisi = []
+    
     for c in st.session_state.calisanlar:
-        toplam_yevmiye = 0
-        giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
-        is_cikis_yapti = False
-        haftalik_calisma = {}
-        pazar_gunleri = []
-        sirali_puantajlar = sorted(st.session_state.puantaj.items())
-        for k, v in sirali_puantajlar:
-            if k.endswith(f"_{c['id']}"):
-                p_tarih_str = k.split("_")[0]
-                p_tarih_obj = datetime.strptime(p_tarih_str, '%Y-%m-%d').date()
-                if p_tarih_obj < giris_tarihi_obj:
+        if c["aktif"]:
+            toplam_yevmiye = 0
+            is_cikis_yapti = False
+            haftalik_calisma = {}
+            pazar_gunleri = []
+            
+            giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
+            
+            # Gün gün tara
+            for gun in range(1, r_gun_sayisi + 1):
+                try:
+                    mevcut_tarih = datetime(r_yil, r_ay_no, gun).date()
+                except:
+                    continue
+                
+                matris_key = f"{r_yil}_{r_ay_no}_{c['id']}_{gun}"
+                v = st.session_state.aylik_matris.get(matris_key, "1")
+                
+                if mevcut_tarih < giris_tarihi_obj:
                     continue
                 if is_cikis_yapti:
                     continue
                 if v == "Ç":
                     is_cikis_yapti = True
                     continue
-                hafta_key = p_tarih_obj.strftime('%Y-W%U')
+                
+                hafta_key = mevcut_tarih.strftime('%Y-W%U')
                 if hafta_key not in haftalik_calisma:
                     haftalik_calisma[hafta_key] = 0
-                if p_tarih_obj.weekday() == 6:
-                    pazar_gunleri.append({"tarih": p_tarih_obj, "hafta_key": hafta_key, "kod": v})
-                else:
-                    if v == "1":
-                        toplam_yevmiye += 1
-                        haftalik_calisma[hafta_key] += 1
-                    elif v == "2":
-                        toplam_yevmiye += 2
-                        haftalik_calisma[hafta_key] += 1
-        for pazar in pazar_gunleri:
-            if pazar["kod"] in ["1", "2"]:
-                if pazar["kod"] == "1": toplam_yevmiye += 1
-                elif pazar["kod"] == "2": toplam_yevmiye += 2
-            else:
-                if haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
-                    toplam_yevmiye += 1
-        if c["tur"] == "Yevmiye":
-            hak_edis = toplam_yevmiye * c["ucret"]
-        else:
-            hak_edis = c["ucret"]
-            if is_cikis_yapti:
-                hak_edis = c["ucret"] / 2
-        banka = min(float(c["banka_tutari"]), float(hak_edis))
-        elden = hak_edis - banka
-        rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "İşe Giriş": c["giris_tarihi"], "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{elden:,.2f} ₺"})
-    if rapor_verisi:
-        st.table(pd.DataFrame(rapor_verisi))
+Kodu dikkatli kullanın.
+if mevcut_tarih.weekday() == 6:
+pazar_gunleri.append({"hafta_key": hafta_key, "kod": v})
+else:
+if v == "1":
+toplam_yevmiye += 1
+haftalik_calisma[hafta_key] += 1
+elif v == "2":
+toplam_yevmiye += 2
+haftalik_calisma[hafta_key] += 1
+for pazar in pazar_gunleri:
+if pazar["kod"] in ["1", "2"]:
+if pazar["kod"] == "1": toplam_yevmiye += 1
+elif pazar["kod"] == "2": toplam_yevmiye += 2
+else:
+if haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
+toplam_yevmiye += 1
+if c["tur"] == "Yevmiye":
+hak_edis = toplam_yevmiye * c["ucret"]
+else:
+hak_edis = c["ucret"]
+if is_cikis_yapti:
+hak_edis = c["ucret"] / 2
+banka = min(float(c["banka_tutari"]), float(hak_edis))
+elden = hak_edis - banka
+rapor_verisi.append({
+"İşçi Adı": c["ad_soyad"],
+"Tür": c["tur"],
+"Çalışılan Gün (Toplam)": toplam_yevmiye,
+"Toplam Hak Ediş": f"{hak_edis:,.2f} ₺",
+"Bankaya Yatacak": f"{banka:,.2f} ₺",
+"Elden Verilecek": f"{elden:,.2f} ₺"
+})
+if rapor_verisi:
+st.table(pd.DataFrame(rapor_verisi))
