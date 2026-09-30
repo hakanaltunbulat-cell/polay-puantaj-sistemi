@@ -58,11 +58,11 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.subheader("✏️ Çalışan Bilgilerini Düzenle")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
     if isimler:
-        s_ad = st.selectbox("Düzenlenecek Kişi:", isimler)
-        idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == s_ad)
+        s_ad = st.selectbox("Düzenlenecek Kişi:", " ".join(isimler).split(" "))
+        idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] in s_ad)
         c_bilgi = st.session_state.calisanlar[idx]
         with st.form("duzen_form"):
-            y_tur = st.selectbox("Yeni Maaş Tipi", ["Yevmiye", "Aylık"], index=["Yevmiye", "Aylık"].index(c_bilgi["tur"]))
+            y_tur = st.selectbox("Yeni Maaş Tipi", ["Yevmiye", "Aylık"])
             y_ucret = st.number_input("Yeni Ücret", min_value=0, value=int(c_bilgi["ucret"]))
             y_banka = st.number_input("Yeni Banka Tutarı", min_value=0, value=int(c_bilgi["banka_tutari"]))
             if st.form_submit_button("🔄 Bilgileri Güncelle"):
@@ -75,13 +75,13 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
     if isimler:
-        sil_ad = st.selectbox("Silinecek Kişi:", isimler, key="sil_box")
+        sil_ad = st.selectbox("Silinecek Kişi:", " ".join(isimler).split(" "), key="sil_box")
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
-            st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
+            st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] not in sil_ad]
             st.success("❌ Silindi!")
             st.rerun()
 
-elif islem == "📅 Puantaj Girişi" or islem == "📅 Puantaj Matrisi & Rapor":
+elif islem == "📅 Puantaj Matrisi & Rapor":
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
     with c_y: secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
@@ -160,14 +160,8 @@ elif islem == "📅 Puantaj Girişi" or islem == "📅 Puantaj Matrisi & Rapor":
         bnk = min(float(c["banka_tutari"]), float(h_edis))
         eld = float(h_edis - bnk)
         
-        if secilen_atesci == c["ad_soyad"]:
-            eld += float(atesci_ucreti)
-            h_edis += float(atesci_ucreti)
-            c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)"
-        else:
-            c_ad_guncel = c["ad_soyad"]
+        c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
+        if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
 
         t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
         rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
-
-    if len(rapor_verisi) > 0:
