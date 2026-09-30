@@ -161,7 +161,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             width="small"
         )
 
-    # Matris verisini hazırlama (Eğer kayıt yoksa tamamen boş gelir)
+    # Matris verisini hazırlama (Varsayılan olarak tamamen boş gelir)
     for c in st.session_state.calisanlar:
         satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
         for gun in range(1, gun_sayisi + 1):
