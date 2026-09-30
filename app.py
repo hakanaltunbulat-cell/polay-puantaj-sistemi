@@ -150,49 +150,58 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
     
     matris_data = []
-    sutun_haritalama = {}
     config_sutunlar = {
         "SIRA": st.column_config.NumberColumn(disabled=True, width="small"), 
         "ADI SOYADI": st.column_config.TextColumn(disabled=True, width="medium")
     }
     
+    # Günlük selectbox ayarlarını sütunlara bağlama
+    for gun in range(1, gun_sayisi + 1):
+        wd = datetime(secilen_yil, ay_no, gun).weekday()
+        gun_adi = gun_kisa_adlar[wd]
+        sutun_basligi = f"{gun} ({gun_adi})"
+        config_sutunlar[sutun_basligi] = st.column_config.SelectboxColumn(
+            sutun_basligi,
+            options=gecerli_kodlar,
+            required=False,
+            width="small"
+        )
+
+    # Matris verisini hazırlama
     for c in st.session_state.calisanlar:
         satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
         for gun in range(1, gun_sayisi + 1):
-            try: wd = datetime(secilen_yil, ay_no, gun).weekday()
-            except: wd = 0
-            s_adi = f"{gun} {gun_kisa_adlar[wd]}"
-            sutun_haritalama[gun] = s_adi
-            config_sutunlar[s_adi] = st.column_config.TextColumn(width="small")
+            wd = datetime(secilen_yil, ay_no, gun).weekday()
+            gun_adi = gun_kisa_adlar[wd]
+            sutun_basligi = f"{gun} ({gun_adi})"
             
-            m_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
-            if m_key not in st.session_state.aylik_matris: 
-                st.session_state.aylik_matris[m_key] = ""
-            satir[s_adi] = st.session_state.aylik_matris[m_key]
+            anahtar = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
+            if anahtar not in st.session_state.aylik_matris:
+                st.session_state.aylik_matris[anahtar] = "1"
+                
+            satir[sutun_basligi] = st.session_state.aylik_matris[anahtar]
         matris_data.append(satir)
         
-    if matris_data:
-        st.subheader("🗓️ Günlük Puantaj Girdi Alanı")
-        df_matris = pd.DataFrame(matris_data)
-        g_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key="m_ed_v_f")
-        
-        if st.button("💾 Bu Ayın Puantaj Değişikliklerini Veri Tabanına Kaydet"):
-            for _, row in g_tablo.iterrows():
-                c_id = int(row["SIRA"])
-                for gun in range(1, gun_sayisi + 1):
-                    s_adi = sutun_haritalama[gun]
-                    deger = str(row[s_adi]).strip().upper()
-                    if deger not in gecerli_kodlar:
-                        deger = ""
-                    m_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    st.session_state.aylik_matris[m_key] = deger
-            verileri_kaydet()
-            st.success("✔️ Puantaj veritabanı başarıyla güncellendi!")
-            st.rerun()
-        
-        # --- MAAŞ HESAPLAMA VE RAPORLAMA KISMI (ELIF KOŞULUNUN İÇİNDE) ---
-        st.write("---")
-        st.markdown(f'<div class="excel-title">💰 {secilen_ay.upper()} {secilen_yil} HAK EDİŞ VE ÖDEME DAĞILIM LİSTESİ</div>', unsafe_allow_html=True)
-        
-        rapor_verileri = []
-        for c in st.session_state.calisanlar:
+    df_matris = pd.DataFrame(matris_data)
+    
+    st.markdown("### 📝 Puantaj Düzenleme Tablosu")
+    st.caption("💡 Hücreye çift tıklayıp durum seçebilirsiniz. Değerler: 1: Çalıştı, 0: Gelmedi, 2: Çift Yevmiye, Ç: Çeyrek")
+    
+    edited_df = st.data_editor(
+        df_matris,
+        column_config=config_sutunlar,
+        hide_index=True,
+        use_container_width=True
+    )
+    
+    if st.button("💾 Değişiklikleri Puantaj Matrisine Kaydet"):
+        for index, row in edited_df.iterrows():
+            c_id = row["SIRA"]
+            for gun in range(1, gun_sayisi + 1):
+                wd = datetime(secilen_yil, ay_no, gun).weekday()
+                gun_adi = gun_kisa_adlar[wd]
+                sutun_basligi = f"{gun} ({gun_adi})"
+                
+                anahtar = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
+                st.session_state.aylik_matris[anahtar] = str(row[sutun_basligi])
+        verileri_kaydet()
