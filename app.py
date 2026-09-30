@@ -137,8 +137,8 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
-    with c_y: secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
-    with c_a: secilen_ay = st.selectbox("Ay Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
+    secilen_yil = c_y.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
+    secilen_ay = c_a.selectbox("Ay Seçin", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
         
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
