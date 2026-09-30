@@ -172,7 +172,8 @@ elif menu == "💰 Maaş & Ödeme Raporu":
 
             for pazar in pazar_gunleri:
                 if pazar["kod"] in ["1", "2"]:
-                    if pazar["kod"] == "1": toplam_yevmiye += 1
-                    elif pazar["kod"] == "2": toplam_yevmiye += 2
+                    if pazar["kod"] == "1":
+                        toplam_yevmiye += 1
+                    elif pazar["kod"] == "2":
+                        toplam_yevmiye += 2
                 else:
-                    if haftalik_calisma.get(pazar["hafta_key"], 0) >= 4:
