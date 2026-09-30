@@ -9,6 +9,17 @@ KULLANICI_ADI, SIFRE = "polay", "1234"
 CALISAN_DOSYA, MATRIS_DOSYA = "veri_calisanlar.json", "veri_puantaj.json"
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
+if 'giris_yapildi' not in st.session_state: st.session_state.giris_yapildi = False
+if not st.session_state.giris_yapildi:
+    st.subheader("🔒 POLAY PUANTAJ SİSTEMİ - GÜVENLİ GİRİŞ")
+    g_kullanici = st.text_input("Yönetici Kullanıcı Adı:")
+    g_sifre = st.text_input("Giriş Şifresi:", type="password")
+    if st.button("🔓 Siteme Güvenli Giriş Yap"):
+        if g_kullanici == KULLANICI_ADI and g_sifre == SIFRE:
+            st.session_state.giris_yapildi = True; st.success("Giriş Başarılı!"); st.rerun()
+        else: st.error("🚨 Hatalı Giriş!")
+    st.stop()
+
 if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state:
     if os.path.exists(CALISAN_DOSYA):
         with open(CALISAN_DOSYA, "r", encoding="utf-8") as f: st.session_state.calisanlar = json.load(f)
@@ -29,25 +40,11 @@ if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_stat
     else:
         st.session_state.aylik_matris = {}
         for g in range(1, 31): st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
-        st.session_state.aylik_matris["2026_9_1_11"] = "0"
-        st.session_state.aylik_matris["2026_9_1_17"] = "0"
-        st.session_state.aylik_matris["2026_9_1_25"] = "0"
+        st.session_state.aylik_matris["2026_9_1_11"], st.session_state.aylik_matris["2026_9_1_17"], st.session_state.aylik_matris["2026_9_1_25"] = "0", "0", "0"
 
 def verileri_kaydet():
     with open(CALISAN_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.calisanlar, f, ensure_ascii=False, indent=4)
     with open(MATRIS_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
-
-if 'giris_yapildi' not in st.session_state: st.session_state.giris_yapildi = False
-
-if not st.session_state.giris_yapildi:
-    st.subheader("🔒 POLAY PUANTAJ SİSTEMİ - GÜVENLİ GİRİŞ")
-    g_kullanici = st.text_input("Yönetici Kullanıcı Adı:")
-    g_sifre = st.text_input("Giriş Şifresi:", type="password")
-    if st.button("🔓 Siteme Güvenli Giriş Yap"):
-        if g_kullanici == KULLANICI_ADI and g_sifre == SIFRE:
-            st.session_state.giris_yapildi = True; st.success("Giriş Başarılı!"); st.rerun()
-        else: st.error("🚨 Hatalı Giriş!")
-    st.stop()
 
 st.markdown("""<style>
     .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 10px; }
