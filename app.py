@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
 st.set_page_config(page_title="Puantaj Sistemi", layout="wide", initial_sidebar_state="expanded")
 st.title("📊 Şirket Puantaj ve Hak Ediş Otomasyonu")
 
-# 1. GÜNCEL ÇALIŞAN LİSTESİ (Kişiye özel banka tutarları eklendi)
+# 1. GÜNCEL ÇALIŞAN LİSTESİ
 if 'calisanlar' not in st.session_state:
     st.session_state.calisanlar = [
         {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000, "giris_tarihi": "2026-09-01", "aktif": True},
@@ -27,7 +27,7 @@ menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Y�
 
 # --- SAYFA 1: ÇALIŞAN YÖNETİMİ ---
 if menu == "👤 Çalışan Yönetimi":
-    st.subheader("Yeni Çalışan Ekle / Düzenle")
+    st.subheader("➕ Yeni Çalışan Ekle")
     
     with st.form("yeni_calisan", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -49,6 +49,37 @@ if menu == "👤 Çalışan Yönetimi":
             })
             st.success(f"✔️ {ad} başarıyla listeye eklendi!")
 
+    # 🛠️ --- YENİ BÖLÜM: ÇALIŞAN BİLGİLERİNİ DÜZENLEME ALANI ---
+    st.write("---")
+    st.subheader("✏️ Çalışan Bilgilerini Düzenle / Güncelle")
+    aktif_isimler_duzenle = [c["ad_soyad"] for c in st.session_state.calisanlar if c["aktif"]]
+    
+    if aktif_isimler_duzenle:
+        secilen_duzenle = st.selectbox("Bilgilerini değiştirmek istediğiniz çalışanı seçin:", aktif_isimler_duzenle, key="duzenle_sec")
+        
+        # Seçilen çalışanın mevcut bilgilerini bulalım
+        calisan_bilgi = next(c for c in st.session_state.calisanlar if c["ad_soyad"] == secilen_duzenle)
+        
+        with st.form("calisan_duzenle_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                yeni_tur = st.selectbox("Yeni Maaş Tipi", ["Yevmiye", "Aylık"], index=["Yevmiye", "Aylık"].index(calisan_bilgi["tur"]))
+                yeni_ucret = st.number_input("Yeni Ücret Tutarı", min_value=0, value=int(calisan_bilgi["ucret"]))
+            with col2:
+                yeni_banka = st.number_input("Yeni Banka Tutarı", min_value=0, value=int(calisan_bilgi["banka_tutari"]))
+                yeni_giris = st.date_input("Yeni Giriş Tarihi", datetime.strptime(calisan_bilgi["giris_tarihi"], '%Y-%m-%d').date())
+                
+            guncelle_butonu = st.form_submit_button("🔄 Bilgileri Güncelle")
+            
+            if guncelle_butonu:
+                calisan_bilgi["tur"] = yeni_tur
+                calisan_bilgi["ucret"] = yeni_ucret
+                calisan_bilgi["banka_tutari"] = yeni_banka
+                calisan_bilgi["giris_tarihi"] = yeni_giris.strftime('%Y-%m-%d')
+                st.success(f"✔️ {secilen_duzenle} isimli çalışanın bilgileri başarıyla güncellendi!")
+                st.rerun()
+
+    st.write("---")
     st.write("### 👥 Mevcut Çalışan Listesi")
     df_calisanlar = pd.DataFrame(st.session_state.calisanlar)
     if not df_calisanlar.empty:
@@ -60,7 +91,7 @@ if menu == "👤 Çalışan Yönetimi":
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar if c["aktif"]]
     
     if aktif_isimler:
-        secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", aktif_isimler)
+        secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", aktif_isimler, key="sil_sec")
         sil_butonu = st.button("🚨 Seçilen Çalışanı Tamamen Sil")
         
         if sil_butonu:
@@ -110,8 +141,6 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
         is_cikis_yapti = False
         
-        # Pazar kuralı takibi için haftalık çalışma gün sayısı sözlüğü
-        # Örn: '2026-W40' -> hafta içi çalışılan gün sayısı
         haftalik_calisma = {}
         pazar_gunleri = []
         
@@ -119,8 +148,8 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         
         for k, v in sirali_puantajlar:
             if k.endswith(f"_{c['id']}"):
-                p_tarih_str = k.split("_")[0]
-                p_tarih_obj = datetime.strptime(p_tarih_str, '%Y-%m-%d').date()
+                p_tarih_str = k.split("_")
+                p_tarih_obj = datetime.strptime(p_tarih_str[0], '%Y-%m-%d').date()
                 
                 if p_tarih_obj < giris_tarihi_obj:
                     continue
@@ -130,12 +159,10 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                     is_cikis_yapti = True
                     continue
                 
-                # Hangi hafta olduğunu bul (Yıl ve Hafta Numarası)
                 hafta_key = p_tarih_obj.strftime('%Y-W%U')
                 if hafta_key not in haftalik_calisma:
                     haftalik_calisma[hafta_key] = 0
                 
-                # Pazar günü kontrolü (Weekday 6 = Pazar)
                 if p_tarih_obj.weekday() == 6:
                     pazar_gunleri.append({"tarih": p_tarih_obj, "hafta_key": hafta_key, "kod": v})
                 else:
@@ -146,18 +173,14 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                         toplam_yevmiye += 2
                         haftalik_calisma[hafta_key] += 1
 
-        # Pazar yevmiyesi kuralı hesaplaması: "3 gün çalışıp 4 gün gelmeyene pazar 0 yazılır"
-        # Yani Pazar yevmiyesini alabilmesi için hafta içi en az 4 gün çalışmış olması gerekir.
         for pazar in pazar_gunleri:
             if pazar["kod"] in ["1", "2"]:
-                # Pazar günü kendisi zaten çalıştıysa yevmiyesini alır
                 if pazar["kod"] == "1": toplam_yevmiye += 1
                 elif pazar["kod"] == "2": toplam_yevmiye += 2
             else:
-                # Pazar günü çalışmadıysa, o hafta içi en her halükarda en az 4 gün gelmiş mi?
                 hafta_ici_gelme = haftalik_calisma.get(pazar["hafta_key"], 0)
                 if hafta_ici_gelme >= 4:
-                    toplam_yevmiye += 1 # Pazar yevmiyesi hak etti
+                    toplam_yevmiye += 1
 
         if c["tur"] == "Yevmiye":
             hak_edis = toplam_yevmiye * c["ucret"]
@@ -180,4 +203,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         })
         
     if rapor_verisi:
-        st.table(pd.DataFrame(rapor_verisi))
