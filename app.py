@@ -1,11 +1,82 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import calendar
+import sqlite3
 
 KULLANICI_ADI, SIFRE = "polay", "1234"
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
+# ==========================================
+# 🗄️ SQLITE VERİ TABANI YÖNETİMİ
+# ==========================================
+def veritabani_hazirla():
+    conn = sqlite3.connect("puantaj.db")
+    cursor = conn.cursor()
+    # Çalışanlar tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS calisanlar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ad_soyad TEXT NOT NULL,
+            tur TEXT NOT NULL,
+            ucret REAL NOT NULL,
+            banka_tutari REAL NOT NULL
+        )
+    """)
+    # Puantaj matrisi tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS puantaj (
+            matris_anahtar TEXT PRIMARY KEY,
+            deger TEXT
+        )
+    """)
+    conn.commit()
+    
+    # Eğer tablo tamamen boşsa varsayılan çalışanları yükle
+    cursor.execute("SELECT COUNT(*) FROM calisanlar")
+    if cursor.fetchone()[0] == 0:
+        varsayilan_calisanlar = [
+            ("FATİH GENÇOĞLU", "Yevmiye", 2167, 34750),
+            ("SANAYİ TOPRAK", "Yevmiye", 1778, 15000),
+            ("ENVER DEMİR", "Yevmiye", 1524, 15000),
+            ("OKAN ÇELİK", "Yevmiye", 2167, 15000),
+            ("MUSTAFA ÖZER", "Yevmiye", 1905, 15000),
+            ("MUSTAFA BAŞAR", "Yevmiye", 1905, 15000),
+            ("SADIK AYGÜN", "Yevmiye", 2000, 15000),
+            ("FIRAT SAYMAZ", "Aylık", 110000, 15000),
+            ("HAKAN ALTUNBULAT", "Aylık", 140000, 15000)
+        ]
+        cursor.executemany("INSERT INTO calisanlar (ad_soyad, tur, ucret, banka_tutari) VALUES (?, ?, ?, ?)", varsayilan_calisanlar)
+        conn.commit()
+        
+        # Görseldeki varsayılan 0 değerlerini matrise işle
+        cursor.execute("SELECT id FROM calisanlar")
+        isciler = cursor.fetchall()
+        for isci in isciler:
+            isci_id = isci[0]
+            for g in range(1, 31):
+                kod = "0" if g in [11, 17, 25] else "1"
+                cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (f"2026_9_{isci_id}_{g}", kod))
+        conn.commit()
+    conn.close()
+
+# Veritabanı altyapısını başlat
+veritabani_hazirla()
+
+def calisanlari_getir():
+    conn = sqlite3.connect("puantaj.db")
+    df = pd.read_sql_query("SELECT * FROM calisanlar", conn)
+    conn.close()
+    return df.to_dict(orient="records")
+
+def puantaj_matrisi_getir():
+    conn = sqlite3.connect("puantaj.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT matris_anahtar, deger FROM puantaj")
+    veriler = cursor.fetchall()
+    conn.close()
+    return {row[0]: row[1] for row in veriler}
+
+# Oturum Durumu Kontrolü
 if 'giris_yapildi' not in st.session_state: 
     st.session_state.giris_yapildi = False
 
@@ -23,7 +94,7 @@ if not st.session_state.giris_yapildi:
             st.error("🚨 Hatalı Giriş!")
     st.stop()
 
-# 🎨 ARAYÜZ VE TABLO STİLLERİ
+# 🎨 EXCEL BENZERİ TABLO STİLLERİ
 st.markdown("""<style>
     .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 10px; }
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
@@ -32,33 +103,7 @@ st.markdown("""<style>
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ SİSTEMİ</div>', unsafe_allow_html=True)
 
-# 👥 VARSAYILAN ÇALIŞAN LİSTESİ INITIALIZATION
-if 'calisanlar' not in st.session_state:
-    st.session_state.calisanlar = [
-        {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750},
-        {"id": 2, "ad_soyad": "SANAYİ TOPRAK", "tur": "Yevmiye", "ucret": 1778, "banka_tutari": 15000},
-        {"id": 3, "ad_soyad": "ENVER DEMİR", "tur": "Yevmiye", "ucret": 1524, "banka_tutari": 15000},
-        {"id": 4, "ad_soyad": "OKAN ÇELİK", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 15000},
-        {"id": 5, "ad_soyad": "MUSTAFA ÖZER", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
-        {"id": 6, "ad_soyad": "MUSTAFA BAŞAR", "tur": "Yevmiye", "ucret": 1905, "banka_tutari": 15000},
-        {"id": 7, "ad_soyad": "SADIK AYGÜN", "tur": "Yevmiye", "ucret": 2000, "banka_tutari": 15000},
-        {"id": 8, "ad_soyad": "FIRAT SAYMAZ", "tur": "Aylık", "ucret": 110000, "banka_tutari": 15000},
-        {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000}
-    ]
-
-# 📅 VARSAYILAN PUANTAJ MATRİSİ INITIALIZATION
-if 'aylik_matris' not in st.session_state:
-    st.session_state.aylik_matris = {}
-    for c in st.session_state.calisanlar:
-        for g in range(1, 31): 
-            st.session_state.aylik_matris[f"2026_9_{c['id']}_{g}"] = "1"
-    # İlk ekran görüntüsündeki gibi bazı boşlukları/eksikleri simüle edelim
-    for c in st.session_state.calisanlar:
-        st.session_state.aylik_matris[f"2026_9_{c['id']}_11"] = "0"
-        st.session_state.aylik_matris[f"2026_9_{c['id']}_17"] = "0"
-        st.session_state.aylik_matris[f"2026_9_{c['id']}_25"] = "0"
-
-# 🏢 SOL PANEL YÖNETİMİ
+# 🏢 SOL MENÜ YÖNETİMİ
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 if st.sidebar.button("🔒 Güvenli Çıkış Yap"): 
     st.session_state.giris_yapildi = False
@@ -69,6 +114,10 @@ gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
 secilen_yil, secilen_ay, ay_no, gun_sayisi = 2026, "Eylül", 9, 30
 
+# Veritabanından güncel bilgileri çek
+calisanlar_listesi = calisanlari_getir()
+aylik_matris_depo = puantaj_matrisi_getir()
+
 # ==========================================
 # 👤 ÇALIŞAN EKLE / SİL / DÜZENLE MODÜLÜ
 # ==========================================
@@ -78,37 +127,53 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     tur = st.selectbox("Maaş Tipi", ["Yevmiye", "Aylık"])
     ucret = st.number_input("Ücret Tutarı", min_value=0, value=2000)
     b_tut = st.number_input("Bankaya Yatacak Sabit Tutar", min_value=0, value=15000)
+    
     if st.button("💾 Yeni Çalışanı Sisteme Kaydet") and ad:
-        y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
-        st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut})
-        st.success("✔️ Başarıyla eklendi!")
+        conn = sqlite3.connect("puantaj.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO calisanlar (ad_soyad, tur, ucret, banka_tutari) VALUES (?, ?, ?, ?)", (ad, tur, ucret, b_tut))
+        conn.commit()
+        conn.close()
+        st.success("✔️ Çalışan veritabanına kalıcı olarak kaydedildi!")
         st.rerun()
+        
     st.write("---")
-    isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
+    isimler = [c["ad_soyad"] for c in calisanlar_listesi]
     if isimler:
         secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
-        idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
-        y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["ucret"]))
-        y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["banka_tutari"]))
+        idx = next(i for i, c in enumerate(calisanlar_listesi) if c["ad_soyad"] == secilen_kisi)
+        
+        y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(calisanlar_listesi[idx]["ucret"]))
+        y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(calisanlar_listesi[idx]["banka_tutari"]))
+        
         if st.button("🔄 Değişiklikleri Personel Kartına Kilitle"):
-            st.session_state.calisanlar[idx]["ucret"], st.session_state.calisanlar[idx]["banka_tutari"] = y_ucret, y_banka
-            st.success("✔️ Güncellendi!")
+            conn = sqlite3.connect("puantaj.db")
+            cursor = conn.cursor()
+            cursor.execute("UPDATE calisanlar SET ucret = ?, banka_tutari = ? WHERE id = ?", (y_ucret, y_banka, calisanlar_listesi[idx]["id"]))
+            conn.commit()
+            conn.close()
+            st.success("✔️ Bilgiler veritabanında güncellendi!")
             st.rerun()
+            
     st.write("---")
     if isimler:
         sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(isimler)))
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
-            st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
-            st.success("❌ Silindi!")
+            conn = sqlite3.connect("puantaj.db")
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM calisanlar WHERE ad_soyad = ?", (sil_ad,))
+            conn.commit()
+            conn.close()
+            st.success("❌ Çalışan veritabanından kalıcı olarak silindi!")
             st.rerun()
 
 # ==========================================
-# 📅 PUANTAJ MATRİSİ & RAPOR MODÜLÜ (ÇÖZÜM)
+# 📅 PUANTAJ MATRİSİ & RAPOR MODÜLÜ
 # ==========================================
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
-    aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
+    aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
     secilen_atesci = st.sidebar.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
     atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
     
@@ -116,7 +181,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     sutun_haritalama = dict()
     config_sutunlar = {"SIRA": st.column_config.NumberColumn(disabled=True), "ADI SOYADI": st.column_config.TextColumn(disabled=True)}
     
-    for c in st.session_state.calisanlar:
+    for c in calisanlar_listesi:
         satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
         for gun in range(1, gun_sayisi + 1):
             try: wd = datetime(secilen_yil, ay_no, gun).weekday()
@@ -126,17 +191,14 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             config_sutunlar[s_adi] = st.column_config.TextColumn(width="small")
             
             m_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
-            if m_key not in st.session_state.aylik_matris: 
-                st.session_state.aylik_matris[m_key] = ""
-            satir[s_adi] = st.session_state.aylik_matris[m_key]
+            satir[s_adi] = aylik_matris_depo.get(m_key, "")
         matris_data.append(satir)
         
     if matris_data:
         df_matris = pd.DataFrame(matris_data)
         
-        # 🟢 VERİLERİN KAYBOLMASINI ENGELLEYEN FORM YAPISI
         with st.form("puantaj_formu"):
-            st.markdown("⚠️ *Tabloda değişiklik yaptıktan sonra aşağıdaki **Değişiklikleri Kaydet** butonuna basınız.*")
+            st.markdown("💡 *Tabloda düzenlemeleri yapın ve veritabanına kalıcı işlenmesi için **Kaydet** butonuna basın.*")
             g_tablo = st.data_editor(
                 df_matris, 
                 hide_index=True, 
@@ -145,53 +207,22 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                 key="m_ed_v_f"
             )
             
-            kaydet_butonu = st.form_submit_button("💾 Bu Ayın Puantaj Değişikliklerini Kaydet")
+            kaydet_butonu = st.form_submit_button("💾 Bu Ayın Puantaj Değişikliklerini Veritabanına Kaydet")
             
             if kaydet_butonu:
+                conn = sqlite3.connect("puantaj.db")
+                cursor = conn.cursor()
                 for _, row in g_tablo.iterrows():
                     c_id = int(row["SIRA"])
                     for gun in range(1, gun_sayisi + 1):
-                        yeni_deger = str(row[sutun_haritalama[gun]]).strip().upper()
+                        yeni_val = str(row[sutun_haritalama[gun]]).strip().upper()
                         m_key_save = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                        if yeni_deger in gecerli_kodlar:
-                            st.session_state.aylik_matris[m_key_save] = yeni_deger
-                        else:
-                            st.session_state.aylik_matris[m_key_save] = ""
-                st.success("✔️ Değişiklikler başarıyla hafızaya kilitlendi!")
+                        val_to_save = yeni_val if yeni_val in gecerli_kodlar else ""
+                        cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (m_key_save, val_to_save))
+                conn.commit()
+                conn.close()
+                st.success("✔️ Tüm puantaj değişiklikleri veritabanı dosyasına kilitlendi!")
                 st.rerun()
 
     # ==========================================
     # 💰 HAK EDİŞ VE ÖDEME RAPOR HESAPLAMALARI
-    # ==========================================
-    st.write("---")
-    st.subheader(f"💰 {secilen_ay} {secilen_yil} Hak Ediş ve Ödeme Dağılım Listesi")
-    rapor_verisi = list()
-    t_hakedis, t_banka, t_elden = 0.0, 0.0, 0.0
-    
-    for c in st.session_state.calisanlar:
-        toplam_yevmiye, is_cikis, cikis_gunu, haftalik_calisma, pazar_gunleri = 0, False, gun_sayisi, {}, list()
-        
-        # 1. Günlük puantaj taraması ve hafta içi/sonu gruplama
-        for gun in range(1, gun_sayisi + 1):
-            v = st.session_state.aylik_matris.get(f"{secilen_yil}_{ay_no}_{c['id']}_{gun}", "").strip().upper()
-            if is_cikis: continue
-            if v == "Ç": 
-                is_cikis, cikis_gunu = True, gun
-                continue
-            
-            try: m_tarih = datetime(secilen_yil, ay_no, gun).date()
-            except: continue
-            
-            h_key = m_tarih.strftime('%Y-W%U')
-            if h_key not in haftalik_calisma: haftalik_calisma[h_key] = 0
-            
-            if m_tarih.weekday() == 6: 
-                pazar_gunleri.append({"h_key": h_key, "kod": v})
-            else:
-                if v == "1": 
-                    toplam_yevmiye += 1
-                    haftalik_calisma[h_key] += 1
-                elif v == "2": 
-                    toplam_yevmiye += 2
-                    haftalik_calisma[h_key] += 1
-
