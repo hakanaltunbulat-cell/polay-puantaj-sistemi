@@ -3,8 +3,35 @@ import pandas as pd
 from datetime import datetime
 import calendar
 
+# 🔐 GÜVENLİK VE GİRİŞ BİLGİLERİ AYARI
+KULLANICI_ADI = "polay"
+SIFRE = "1234"
+
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
+# Şifre Kontrol Fonksiyonu
+if 'giris_yapildi' not in st.session_state:
+    st.session_state.giris_yapildi = False
+
+if not st.session_state.giris_yapildi:
+    st.markdown("""<style>
+        .login-box { background-color: #f2f4f7; padding: 30px; border-radius: 10px; border: 2px solid #75aadb; text-align: center; max-width: 400px; margin: auto; margin-top: 100px; }
+    </style>""", unsafe_allow_html=True)
+    
+    st.subheader("🔒 POLAY PUANTAJ SİSTEMİ - GÜVENLİ GİRİŞ")
+    g_kullanici = st.text_input("Yönetici Kullanıcı Adı:")
+    g_sifre = st.text_input("Giriş Şifresi:", type="password")
+    
+    if st.button("🔓 Siteme Güvenli Giriş Yap"):
+        if g_kullanici == KULLANICI_ADI and g_sifre == SIFRE:
+            st.session_state.giris_yapildi = True
+            st.success("Giriş Başarılı! Sistem yükleniyor...")
+            st.rerun()
+        else:
+            st.error("🚨 Hatalı Kullanıcı Adı veya Şifre Girdiniz!")
+    st.stop()
+
+# Giriş yapıldıktan sonra çalışacak ana gövde
 st.markdown("""<style>
     .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 10px; }
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
@@ -34,6 +61,10 @@ if 'aylik_matris' not in st.session_state:
     st.session_state.aylik_matris["2026_9_1_25"] = "0"
 
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
+if st.sidebar.button("🔒 Güvenli Çıkış Yap"):
+    st.session_state.giris_yapildi = False
+    st.rerun()
+
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
@@ -60,7 +91,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(c_bilgi["ucret"]))
         y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(c_bilgi["banka_tutari"]))
         if st.button("🔄 Değişiklikleri Personel Kartına Kilitle"):
-            st.session_state.calisanlar[idx]["ucret"] = y_ucret
+            st.session_state.calisanlar[idx["ucret"] = y_ucret
             st.session_state.calisanlar[idx]["banka_tutari"] = y_banka
             st.success("✔️ Personel bilgileri güncellendi!"); st.rerun()
 
@@ -139,13 +170,3 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
         if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
         t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
-        rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
-
-    rapor_verisi.append({"İşçi Adı": "➡️ GENEL TOPLAM", "Tür": "---", "Maaş / Ücret": "---", "Hesaplanan Gün": "---", "Toplam Hak Ediş": f"{int(t_hakedis):,} ₺", "Bankaya Yatacak": f"{int(t_banka):} ₺", "Elden Verilecek": f"{int(t_elden):} ₺"})
-    df_rap = pd.DataFrame(rapor_verisi)
-    st.table(df_rap)
-    
-    # 📥 EXCEL İNDİRME BUTONU
-    st.write("---")
-    csv = df_rap.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Bu Raporu Excel/CSV Olarak Bilgisayara İndir", data=csv, file_name=f"Polay_Madencilik_{secilen_ay}_{secilen_yil}_Rapor.csv", mime="text/csv")
