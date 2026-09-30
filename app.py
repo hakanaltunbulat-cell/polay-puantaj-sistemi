@@ -24,7 +24,6 @@ if 'aylik_matris' not in st.session_state:
 
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
-
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 
 if menu == "👤 Çalışan Yönetimi":
@@ -101,15 +100,12 @@ elif menu == "📅 Puantaj Girişi":
     
     matris_data = []
     sutun_haritalama = {}
-    
     for c in st.session_state.calisanlar:
         if c["aktif"]:
             satir = {"SIRA": c["id"], "ADI SOYADI": c["ad_soyad"]}
             for gun in range(1, gun_sayisi + 1):
-                try:
-                    wd = datetime(secilen_yil, ay_no, gun).weekday()
-                except:
-                    wd = 0
+                try: wd = datetime(secilen_yil, ay_no, gun).weekday()
+                except: wd = 0
                 s_adi = f"{gun} {gun_kisa_adlar[wd]}"
                 sutun_haritalama[gun] = s_adi
                 matris_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
@@ -138,41 +134,28 @@ elif menu == "💰 Maaş & Ödeme Raporu":
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
-    ay_numaralari = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}
-    r_ay_no = ay_numaralari[r_ay]
+    r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
     weekday, r_gun_sayisi = calendar.monthrange(r_yil, r_ay_no)
-
     rapor_verisi = []
+
     for c in st.session_state.calisanlar:
         if c["aktif"]:
-            toplam_yevmiye = 0
-            is_cikis_yapti = False
-            haftalik_calisma = {}
-            pazar_gunleri = []
+            toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, {}, []
             giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
-            
             for gun in range(1, r_gun_sayisi + 1):
-                try:
-                    mevcut_tarih = datetime(r_yil, r_ay_no, gun).date()
-                except:
-                    continue
-                matris_key = f"{r_yil}_{r_ay_no}_{c['id']}_{gun}"
-                v = st.session_state.aylik_matris.get(matris_key, "").strip()
-                if mevcut_tarih < giris_tarihi_obj or is_cikis_yapti:
-                    continue
-                if v == "Ç":
-                    is_cikis_yapti = True
-                    continue
-                
-                hafta_key = mevcut_tarih.strftime('%Y-W%U')
-                if hafta_key not in haftalik_calisma:
-                    haftalik_calisma[hafta_key] = 0
-                
-                if mevcut_tarih.weekday() == 6:
-                    pazar_gunleri.append({"hafta_key": hafta_key, "kod": v})
+                try: m_tarih = datetime(r_yil, r_ay_no, gun).date()
+                except: continue
+                v = st.session_state.aylik_matris.get(f"{r_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip()
+                if m_tarih < giris_tarihi_obj or is_cikis: continue
+                if v == "Ç": is_cikis = True; continue
+                h_key = m_tarih.strftime('%Y-W%U')
+                if h_key not in haftalik_calisma: haftalik_calisma[h_key] = 0
+                if m_tarih.weekday() == 6: pazar_gunleri.append({"h_key": h_key, "kod": v})
                 else:
-                    if v == "1":
-                        toplam_yevmiye += 1
-                        haftalik_calisma[hafta_key] += 1
-                    elif v == "2":
-                        toplam_yevmiye += 2
+                    if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_key] += 1
+                    elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
+            for pzr in pazar_gunleri:
+                if pzr["kod"] == "1": toplam_yevmiye += 1
+                elif pzr["kod"] == "2": toplam_yevmiye += 2
+                elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
+            hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
