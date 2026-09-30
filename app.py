@@ -9,7 +9,7 @@ KULLANICI_ADI, SIFRE = "polay", "1234"
 CALISAN_DOSYA, MATRIS_DOSYA = "veri_calisanlar.json", "veri_puantaj.json"
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
-def verileri_yukle():
+if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state:
     if os.path.exists(CALISAN_DOSYA):
         with open(CALISAN_DOSYA, "r", encoding="utf-8") as f: st.session_state.calisanlar = json.load(f)
     else:
@@ -29,13 +29,14 @@ def verileri_yukle():
     else:
         st.session_state.aylik_matris = {}
         for g in range(1, 31): st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
-        st.session_state.aylik_matris["2026_9_1_11"], st.session_state.aylik_matris["2026_9_1_17"], st.session_state.aylik_matris["2026_9_1_25"] = "0", "0", "0"
+        st.session_state.aylik_matris["2026_9_1_11"] = "0"
+        st.session_state.aylik_matris["2026_9_1_17"] = "0"
+        st.session_state.aylik_matris["2026_9_1_25"] = "0"
 
 def verileri_kaydet():
     with open(CALISAN_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.calisanlar, f, ensure_ascii=False, indent=4)
     with open(MATRIS_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
 
-if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state: verileri_yukle()
 if 'giris_yapildi' not in st.session_state: st.session_state.giris_yapildi = False
 
 if not st.session_state.giris_yapildi:
