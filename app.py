@@ -124,7 +124,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
     weekday, r_gun_sayisi = calendar.monthrange(secilen_yil, r_ay_no)
     
     rapor_verisi = list()
-    top_hakedis, top_banka, top_elden = 0.0, 0.0, 0.0
+    t_hakedis, t_banka, t_elden = 0.0, 0.0, 0.0
 
     for c in st.session_state.calisanlar:
         if c["aktif"]:
@@ -141,7 +141,7 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 if m_thr.weekday() == 6: pazar_gunleri.append({"h_key": h_ky, "kod": v})
                 else:
                     if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_ky] += 1
-                    elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
+                    elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_ky] += 1
             for pzr in pazar_gunleri:
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
@@ -150,9 +150,9 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             h_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
             bnk = min(float(c["banka_tutari"]), float(h_edis))
             eld = float(h_edis - bnk)
-            top_hakedis += h_edis
-            top_banka += bnk
-            top_elden += eld
+            t_hakedis += h_edis
+            t_banka += bnk
+            t_elden += eld
             
             rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{h_edis:,.2f} ₺", "Bankaya Yatacak": f"{bnk:,.2f} ₺", "Elden Verilecek": f"{eld:,.2f} ₺"})
             
