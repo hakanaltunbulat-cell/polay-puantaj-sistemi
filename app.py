@@ -131,30 +131,29 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             toplam_yevmiye, is_cikis, haftalik_calisma, pazar_gunleri = 0, False, dict(), list()
             giris_tarihi_obj = datetime.strptime(c["giris_tarihi"], '%Y-%m-%d').date()
             for gun in range(1, r_gun_sayisi + 1):
-                try: m_tarih = datetime(secilen_yil, r_ay_no, gun).date()
+                try: m_thr = datetime(secilen_yil, r_ay_no, gun).date()
                 except: continue
                 v = st.session_state.aylik_matris.get(f"{secilen_yil}_{r_ay_no}_{c['id']}_{gun}", "").strip().upper()
-                if m_tarih < giris_tarihi_obj or is_cikis: continue
+                if m_thr < giris_tarihi_obj or is_cikis: continue
                 if v == "Ç": is_cikis = True; continue
-                h_key = m_tarih.strftime('%Y-W%U')
-                if h_key not in haftalik_calisma: haftalik_calisma[h_key] = 0
-                if m_tarih.weekday() == 6: pazar_gunleri.append({"h_key": h_key, "kod": v})
+                h_ky = m_thr.strftime('%Y-W%U')
+                if h_ky not in haftalik_calisma: haftalik_calisma[h_ky] = 0
+                if m_thr.weekday() == 6: pazar_gunleri.append({"h_key": h_ky, "kod": v})
                 else:
-                    if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_key] += 1
+                    if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_ky] += 1
                     elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
             for pzr in pazar_gunleri:
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
                 elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
             
-            hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
-            banka = min(float(c["banka_tutari"]), float(hak_edis))
-            elden = float(hak_edis - banka)
+            h_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
+            bnk = min(float(c["banka_tutari"]), float(h_edis))
+            eld = float(h_edis - bnk)
+            top_hakedis += h_edis
+            top_banka += bnk
+            top_elden += eld
             
-            top_hakedis += hak_edis
-            top_banka += banka
-            top_elden += elden
+            rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{h_edis:,.2f} ₺", "Bankaya Yatacak": f"{bnk:,.2f} ₺", "Elden Verilecek": f"{eld:,.2f} ₺"})
             
-            rapor_verisi.append({
-                "İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çal. Gün": toplam_yevmiye,
-                "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{elden:,.2f} ₺"
+    if len(rapor_verisi) > 0:
