@@ -28,7 +28,7 @@ if 'puantaj' not in st.session_state:
     st.session_state.puantaj = {}
 
 # 2. SOL MENÜ (NAVİGASYON)
-st.sidebar.image("https://flaticon.com", width=80)
+st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 st.sidebar.header("👑 Yönetici Paneli")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 
