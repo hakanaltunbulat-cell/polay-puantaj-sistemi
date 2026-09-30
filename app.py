@@ -57,13 +57,12 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
         c_bilgi = st.session_state.calisanlar[idx]
-        
         y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(c_bilgi["ucret"]))
         y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(c_bilgi["banka_tutari"]))
         if st.button("🔄 Değişiklikleri Personel Kartına Kilitle"):
             st.session_state.calisanlar[idx]["ucret"] = y_ucret
             st.session_state.calisanlar[idx]["banka_tutari"] = y_banka
-            st.success("✔️ Personel ücret ve banka bilgileri güncellendi!"); st.rerun()
+            st.success("✔️ Personel bilgileri güncellendi!"); st.rerun()
 
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
@@ -75,7 +74,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
 
 elif islem == "📅 Puantaj Matrisi & Rapor":
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### ### 🧨 Ateşçi Ödeneği Ayarları")
+    st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
     secilen_atesci = st.sidebar.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
     atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
@@ -134,15 +133,19 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
 
         h_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float((cikis_gunu / float(gun_sayisi)) * c["ucret"]) if is_cikis else float(c["ucret"]))
         if c["id"] == 1 and toplam_yevmiye == 27: h_edis = 58509.0
-
         bnk = min(float(c["banka_tutari"]), float(h_edis))
         eld = float(h_edis - bnk)
         
         c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
         if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
-
         t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
         rapor_verisi.append({"İşçi Adı": c_ad_guncel, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": toplam_yevmiye if c["tur"] == "Yevmiye" else f"Maaşlı ({cikis_gunu} Gün)", "Toplam Hak Ediş": f"{int(h_edis):,} ₺", "Bankaya Yatacak": f"{int(bnk):,} ₺", "Elden Verilecek": f"{int(eld):,} ₺"})
 
     rapor_verisi.append({"İşçi Adı": "➡️ GENEL TOPLAM", "Tür": "---", "Maaş / Ücret": "---", "Hesaplanan Gün": "---", "Toplam Hak Ediş": f"{int(t_hakedis):,} ₺", "Bankaya Yatacak": f"{int(t_banka):} ₺", "Elden Verilecek": f"{int(t_elden):} ₺"})
-    st.table(pd.DataFrame(rapor_verisi))
+    df_rap = pd.DataFrame(rapor_verisi)
+    st.table(df_rap)
+    
+    # 📥 EXCEL İNDİRME BUTONU
+    st.write("---")
+    csv = df_rap.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Bu Raporu Excel/CSV Olarak Bilgisayara İndir", data=csv, file_name=f"Polay_Madencilik_{secilen_ay}_{secilen_yil}_Rapor.csv", mime="text/csv")
