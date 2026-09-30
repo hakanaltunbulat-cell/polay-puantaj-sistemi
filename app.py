@@ -25,7 +25,6 @@ if 'aylik_matris' not in st.session_state:
 st.sidebar.markdown("### 🏢 POLAY PUANTAJ")
 menu = st.sidebar.radio("Sayfalar", ["📅 Puantaj Girişi", "👤 Çalışan Yönetimi", "💰 Maaş & Ödeme Raporu"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
-gecerli_kodlar = ["1", "0", "2", "Ç", ""]
 
 if menu == "👤 Çalışan Yönetimi":
     st.subheader("➕ Yeni Çalışan Ekle")
@@ -90,16 +89,18 @@ elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
     with col_y:
-        secilen_yil = st.selectbox("Yıl", [2026, 2027])
+        secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
     with col_a:
         secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
     weekday, gun_sayisi = calendar.monthrange(secilen_yil, ay_no)
-    st.info("💡 Sadece 1, 0, 2, Ç kodları girilebilir. Yanlış girilen kodlar kaydetme esnasında temizlenir.")
+    st.info("💡 Kullanım: Hücrelere tıklayarak açılan listeden sadece geçerli kodları (1, 0, 2, Ç) seçebilirsiniz.")
     
     matris_data = []
     sutun_haritalama = {}
+    config_sutunlar = {"SIRA": st.column_config.NumberColumn(disabled=True), "ADI SOYADI": st.column_config.TextColumn(disabled=True)}
+    
     for c in st.session_state.calisanlar:
         if c["aktif"]:
             satir = {"SIRA": c["id"], "ADI SOYADI": c["ad_soyad"]}
@@ -108,6 +109,7 @@ elif menu == "📅 Puantaj Girişi":
                 except: wd = 0
                 s_adi = f"{gun} {gun_kisa_adlar[wd]}"
                 sutun_haritalama[gun] = s_adi
+                config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=["", "1", "0", "2", "Ç"], width="small")
                 matris_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
                 if matris_key not in st.session_state.aylik_matris:
                     st.session_state.aylik_matris[matris_key] = ""
@@ -116,26 +118,22 @@ elif menu == "📅 Puantaj Girişi":
 
     if matris_data:
         df_matris = pd.DataFrame(matris_data)
-        guncel_tablo = st.data_editor(df_matris, hide_index=True, disabled=["SIRA", "ADI SOYADI"], use_container_width=True)
+        guncel_tablo = st.data_editor(df_matris, hide_index=True, column_config=config_sutunlar, use_container_width=True, key=f"matris_editor_{secilen_yil}_{ay_no}")
         if st.button("💾 Tüm Aylık Puantaj Değişikliklerini Kaydet"):
             for _, row in guncel_tablo.iterrows():
                 c_id = row["SIRA"]
                 for gun in range(1, gun_sayisi + 1):
                     s_adi = sutun_haritalama[gun]
-                    girilen_deger = str(row[s_adi]).strip().upper()
                     matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    if girilen_deger in gecerli_kodlar:
-                        st.session_state.aylik_matris[matris_key] = girilen_deger
-                    else:
-                        st.session_state.aylik_matris[matris_key] = ""
-            st.success("✔️ Değişiklikler doğrulandı ve kaydedildi!")
+                    st.session_state.aylik_matris[matris_key] = str(row[s_adi]).strip().upper()
+            st.success("✔️ Tüm değişiklikler başarıyla hafızaya kaydedildi!")
             st.rerun()
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
     with col_ry:
-        r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
+        r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
     with col_ra:
         r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
@@ -162,4 +160,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             for pzr in pazar_gunleri:
                 if pzr["kod"] == "1": toplam_yevmiye += 1
                 elif pzr["kod"] == "2": toplam_yevmiye += 2
-                elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
