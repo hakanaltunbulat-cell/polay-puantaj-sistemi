@@ -80,7 +80,7 @@ if menu == "👤 Çalışan Yönetimi":
 elif menu == "📅 Puantaj Girişi":
     st.subheader("📅 Tüm Ayı Gösteren Puantaj Tablosu")
     col_y, col_a = st.columns(2)
-    with col_y: secilen_yil = st.selectbox("Yıl", [2026, 2027, 2028])
+    with col_y: secilen_yil = st.selectbox("Yıl", [2026, 2027])
     with col_a: secilen_ay = st.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[secilen_ay]
@@ -115,14 +115,17 @@ elif menu == "📅 Puantaj Girişi":
                     s_adi = sutun_haritalama[gun]
                     girilen_deger = str(row[s_adi]).strip().upper()
                     matris_key = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                    st.session_state.aylik_matris[matris_key] = girilen_deger if girilen_deger in gecerli_kodlar else ""
+                    if girilen_deger in gecerli_kodlar:
+                        st.session_state.aylik_matris[matris_key] = girilen_deger
+                    else:
+                        st.session_state.aylik_matris[matris_key] = ""
             st.success("✔️ Değişiklikler doğrulandı ve hafızaya işlendi!")
             st.rerun()
 
 elif menu == "💰 Maaş & Ödeme Raporu":
     st.subheader("Hak Ediş ve Ödeme Dağılım Listesi")
     col_ry, col_ra = st.columns(2)
-    with col_ry: r_yil = st.selectbox("Rapor Yılı", [2026, 2027, 2028])
+    with col_ry: r_yil = st.selectbox("Rapor Yılı", [2026, 2027])
     with col_ra: r_ay = st.selectbox("Rapor Ayı", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"], index=8)
     
     r_ay_no = {"Ocak":1,"Şubat":2,"Mart":3,"Nisan":4,"Mayıs":5,"Haziran":6,"Temmuz":7,"Ağustos":8,"Eylül":9,"Ekim":10,"Kasım":11,"Aralık":12}[r_ay]
@@ -151,4 +154,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
                 elif haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
             hak_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float(c["ucret"]) if not is_cikis else float(c["ucret"] / 2))
             banka = min(float(c["banka_tutari"]), float(hak_edis))
-            rapor_verisi.append({"İşçi Adı": c["ad_soyad"], "Tür": c["tur"], "Çalışılan Gün": toplam_yevmiye, "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺", "Bankaya Yatacak": f"{banka:,.2f} ₺", "Elden Verilecek": f"{(hak_edis - banka):,.2f} ₺"})
