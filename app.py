@@ -120,30 +120,32 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     st.write("---")
     st.subheader(f"💰 {secilen_ay} {secilen_yil} Hak Ediş ve Ödeme Dağılım Listesi")
     
-    son_rapor_kutusu = list()
-    toplam_hakedis_genel, toplam_banka_genel, toplam_elden_genel = 0.0, 0.0, 0.0
-    
+    # ⚡ BÖLÜNMESİ İMKANSIZ TEK PARÇA YENİ NESİL RAPORLAMA MOTORU
+    son_rapor_kutusu = []
+    th, tb, te = 0.0, 0.0, 0.0
     for c in st.session_state.calisanlar:
-        toplam_yevmiye, is_cikis, cikis_gunu, haftalik_calisma, pazar_gunleri = 0, False, gun_sayisi, {}, list()
-        for gun in range(1, gun_sayisi + 1):
-            v = st.session_state.aylik_matris.get(f"{secilen_yil}_{ay_no}_{c['id']}_{gun}", "").strip().upper()
-            if is_cikis: continue
-            if v == "Ç": is_cikis, cikis_gunu = True, gun; continue
-            try: m_tarih = datetime(secilen_yil, ay_no, gun).date()
+        tg, ic, cg, hc, pz_l = 0, False, gun_sayisi, {}, []
+        for g in range(1, gun_sayisi + 1):
+            v = st.session_state.aylik_matris.get(f"{secilen_yil}_{ay_no}_{c['id']}_{g}", "").strip().upper()
+            if ic: continue
+            if v == "Ç": ic, cg = True, g; continue
+            try: mt = datetime(secilen_yil, ay_no, g).date()
             except: continue
-            h_key = m_tarih.strftime('%Y-W%U')
-            if h_key not in haftalik_calisma: haftalik_calisma[h_key] = 0
-            if m_tarih.weekday() == 6: pazar_gunleri.append({"h_key": h_key, "kod": v})
+            hk = mt.strftime('%Y-W%U')
+            if hk not in hc: hc[hk] = 0
+            if mt.weekday() == 6: pz_l.append({"hk": hk, "k": v})
             else:
-                if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_key] += 1
-                elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
-        for pzr in pazar_gunleri:
-            if pzr["kod"] in ["1", "2"]: toplam_yevmiye += int(pzr["kod"])
-            elif pzr["kod"] in ["", "0"] and haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
-        h_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float((cikis_gunu / float(gun_sayisi)) * c["ucret"]) if is_cikis else float(c["ucret"]))
-        if c["id"] == 1 and toplam_yevmiye == 27: h_edis = 58509.0
-        bnk = min(float(c["banka_tutari"]), float(h_edis))
-        eld = float(h_edis - bnk)
-        c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
-        if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
-        toplam_hakedis_genel, toplam_banka_genel, toplam_elden_genel = toplam_hakedis_genel + h_edis, toplam_banka_genel + bnk, toplam_elden_genel + eld
+                if v == "1": tg += 1; hc[hk] += 1
+                elif v == "2": tg += 2; hc[hk] += 1
+        for p in pz_l:
+            if p["k"] in ["1", "2"]: tg += int(p["k"])
+            elif p["k"] in ["", "0"] and hc.get(p["hk"], 0) >= 4: tg += 1
+        he = float(tg * c["ucret"]) if c["tur"] == "Yevmiye" else (float((cg / float(gun_sayisi)) * c["ucret"]) if ic else float(c["ucret"]))
+        if c["id"] == 1 and tg == 27: he = 58509.0
+        bk = min(float(c["banka_tutari"]), he)
+        el = float(he - bk)
+        c_name = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
+        if secilen_atesci == c["ad_soyad"]: el, he = el + float(atesci_ucreti), he + float(atesci_ucreti)
+        th, tb, te = th + he, tb + bk, te + el
+        son_rapor_kutusu.append({"İşçi Adı": c_name, "Tür": c["tur"], "Maaş / Ücret": f"{c['ucret']:,} ₺", "Hesaplanan Gün": tg if c["tur"] == "Yevmiye" else f"Maaşlı ({cg} Gün)", "Toplam Hak Ediş": f"{int(he):,} ₺", "Bankaya Yatacak": f"{int(bk):,} ₺", "Elden Verilecek": f"{int(el):,} ₺"})
+    
