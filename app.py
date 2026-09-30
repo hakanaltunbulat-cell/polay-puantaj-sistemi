@@ -13,7 +13,7 @@ st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 if 'giris_yapildi' not in st.session_state: 
     st.session_state.giris_yapildi = False
 
-# --- GÜVENLİK GİRİŞ EKRANS ---
+# --- GÜVENLİK GİRİŞ EKRANI ---
 if not st.session_state.giris_yapildi:
     st.subheader("🔒 POLAY PUANTAJ SİSTEMİ - GÜVENLİ GİRİŞ")
     g_kullanici = st.text_input("Yönetici Kullanıcı Adı:")
