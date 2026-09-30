@@ -5,13 +5,11 @@ import calendar
 
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
-st.markdown("""
-    <style>
+st.markdown("""<style>
     .excel-title { background-color: #75aadb !important; color: black !important; text-align: center; font-weight: bold; font-size: 20px; padding: 12px; border: 1px solid black; margin-bottom: 10px; }
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
     td { border: 1px solid #d9d9d9 !important; text-align: center !important; }
-    </style>
-""", unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ SİSTEMİ</div>', unsafe_allow_html=True)
 
@@ -57,7 +55,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.write("---")
     st.subheader("✏️ Çalışan Bilgilerini Düzenle")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if " ".join(isimler).split(" "):
+    if isimler:
         s_ad = st.selectbox("Düzenlenecek Kişi:", " ".join(isimler).split(" "))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] in s_ad)
         c_bilgi = st.session_state.calisanlar[idx]
@@ -74,7 +72,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
 
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
-    if " ".join(isimler).split(" "):
+    if isimler:
         sil_ad = st.selectbox("Silinecek Kişi:", " ".join(isimler).split(" "), key="sil_box")
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] not in sil_ad]
