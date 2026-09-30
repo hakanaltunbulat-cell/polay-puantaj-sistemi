@@ -135,3 +135,13 @@ elif menu == "💰 Maaş & Ödeme Raporu":
         })
         
     st.table(pd.DataFrame(rapor_verisi))
+  # --- İŞÇİ SİLME ALANI ---
+    st.write("---")
+    st.subheader("🗑️ Çalışan Sil")
+    silinecek_isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
+    secilen_sil = st.selectbox("Silmek istediğiniz çalışanı seçin:", silinecek_isimler)
+    
+    sil_butonu = st.button("🚨 Seçilen Çalışanı Tamamen Sil")
+    if sil_butonu:
+        st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != secilen_sil]
+        st.success(f"❌ {secilen_sil} sistemden tamamen silindi! Sayfayı yenileyebilirsiniz.")
