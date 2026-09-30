@@ -57,7 +57,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.write("---")
     st.subheader("✏️ Çalışan Bilgilerini Düzenle")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if isimler:
+    if " ".join(isimler).split(" "):
         s_ad = st.selectbox("Düzenlenecek Kişi:", " ".join(isimler).split(" "))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] in s_ad)
         c_bilgi = st.session_state.calisanlar[idx]
@@ -74,14 +74,14 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
 
     st.write("---")
     st.subheader("🗑️ Çalışan Sil")
-    if isimler:
+    if " ".join(isimler).split(" "):
         sil_ad = st.selectbox("Silinecek Kişi:", " ".join(isimler).split(" "), key="sil_box")
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] not in sil_ad]
             st.success("❌ Silindi!")
             st.rerun()
 
-elif islem == "📅 Puantaj Matrisi & Rapor":
+elif islem == "📅 Puantaj Girişi" or islem == "📅 Puantaj Matrisi & Rapor":
     st.markdown("### 📅 Dönem Seçimi")
     c_y, c_a = st.columns(2)
     with c_y: secilen_yil = st.selectbox("Yıl Seçin", [2024, 2025, 2026, 2027], index=2)
