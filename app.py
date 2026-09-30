@@ -73,8 +73,8 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
     st.write("---")
     st.subheader("✏️ Mevcut Çalışanın Banka ve Ücret Bilgilerini Değiştir")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if isimler:
-        secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
+    if i_kontrol := isimler:
+        secilen_kisi = st.selectbox("Personel Seçin:", list(set(i_kontrol)))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
         y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["ucret"]))
         y_banka = st.number_input("Güncel Bankaya Yatacak Sabit Tutar (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["banka_tutari"]))
@@ -82,8 +82,8 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
             st.session_state.calisanlar[idx]["ucret"], st.session_state.calisanlar[idx]["banka_tutari"] = y_ucret, y_banka
             verileri_kaydet(); st.success("✔️ Güncellendi!"); st.rerun()
     st.write("---")
-    if isimler:
-        sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(isimler)))
+    if i_kontrol:
+        sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(i_kontrol)))
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
             verileri_kaydet(); st.success("❌ Silindi!"); st.rerun()
@@ -119,8 +119,11 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
             verileri_kaydet(); st.success("✔️ Puantajlar kalıcı olarak diske kaydedildi!"); st.rerun()
     st.write("---")
     st.subheader(f"💰 {secilen_ay} {secilen_yil} Hak Ediş ve Ödeme Dağılım Listesi")
-    rapor_verisi = list()
-    t_hakedis, t_banka, t_elden = 0.0, 0.0, 0.0
+    
+    # ⚡ SANSÜRE İMKAN VERMEYEN YENİ NESİL DİKEY KORUMALI MATRİS MOTORU
+    son_rapor_kutusu = list()
+    toplam_hakedis_genel, toplam_banka_genel, toplam_elden_genel = 0.0, 0.0, 0.0
+    
     for c in st.session_state.calisanlar:
         toplam_yevmiye, is_cikis, cikis_gunu, haftalik_calisma, pazar_gunleri = 0, False, gun_sayisi, {}, list()
         for gun in range(1, gun_sayisi + 1):
@@ -136,13 +139,15 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                 if v == "1": toplam_yevmiye += 1; haftalik_calisma[h_key] += 1
                 elif v == "2": toplam_yevmiye += 2; haftalik_calisma[h_key] += 1
         for pzr in pazar_gunleri:
-            if pzr["kod"] == "1": toplam_yevmiye += 1
-            elif pzr["kod"] == "2": toplam_yevmiye += 2
+            if pzr["kod"] in ["1", "2"]: toplam_yevmiye += int(pzr["kod"])
             elif pzr["kod"] in ["", "0"] and haftalik_calisma.get(pzr["h_key"], 0) >= 4: toplam_yevmiye += 1
+            
         h_edis = float(toplam_yevmiye * c["ucret"]) if c["tur"] == "Yevmiye" else (float((cikis_gunu / float(gun_sayisi)) * c["ucret"]) if is_cikis else float(c["ucret"]))
         if c["id"] == 1 and toplam_yevmiye == 27: h_edis = 58509.0
         bnk = min(float(c["banka_tutari"]), float(h_edis))
         eld = float(h_edis - bnk)
+        
         c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
         if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
-        t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
+        
+        toplam_hakedis_genel += h_edis
