@@ -6,15 +6,12 @@ import json
 import os
 
 KULLANICI_ADI, SIFRE = "polay", "1234"
-CALISAN_DOSYA = "veri_calisanlar.json"
-MATRIS_DOSYA = "veri_puantaj.json"
-
+CALISAN_DOSYA, MATRIS_DOSYA = "veri_calisanlar.json", "veri_puantaj.json"
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
 
 def verileri_yukle():
     if os.path.exists(CALISAN_DOSYA):
-        with open(CALISAN_DOSYA, "r", encoding="utf-8") as f:
-            st.session_state.calisanlar = json.load(f)
+        with open(CALISAN_DOSYA, "r", encoding="utf-8") as f: st.session_state.calisanlar = json.load(f)
     else:
         st.session_state.calisanlar = [
             {"id": 1, "ad_soyad": "FATİH GENÇOĞLU", "tur": "Yevmiye", "ucret": 2167, "banka_tutari": 34750},
@@ -28,24 +25,17 @@ def verileri_yukle():
             {"id": 9, "ad_soyad": "HAKAN ALTUNBULAT", "tur": "Aylık", "ucret": 140000, "banka_tutari": 15000}
         ]
     if os.path.exists(MATRIS_DOSYA):
-        with open(MATRIS_DOSYA, "r", encoding="utf-8") as f:
-            st.session_state.aylik_matris = json.load(f)
+        with open(MATRIS_DOSYA, "r", encoding="utf-8") as f: st.session_state.aylik_matris = json.load(f)
     else:
         st.session_state.aylik_matris = {}
         for g in range(1, 31): st.session_state.aylik_matris[f"2026_9_1_{g}"] = "1"
-        st.session_state.aylik_matris["2026_9_1_11"] = "0"
-        st.session_state.aylik_matris["2026_9_1_17"] = "0"
-        st.session_state.aylik_matris["2026_9_1_25"] = "0"
+        st.session_state.aylik_matris["2026_9_1_11"], st.session_state.aylik_matris["2026_9_1_17"], st.session_state.aylik_matris["2026_9_1_25"] = "0", "0", "0"
 
 def verileri_kaydet():
-    with open(CALISAN_DOSYA, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.calisanlar, f, ensure_ascii=False, indent=4)
-    with open(MATRIS_DOSYA, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
+    with open(CALISAN_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.calisanlar, f, ensure_ascii=False, indent=4)
+    with open(MATRIS_DOSYA, "w", encoding="utf-8") as f: json.dump(st.session_state.aylik_matris, f, ensure_ascii=False, indent=4)
 
-if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state:
-    verileri_yukle()
-
+if 'calisanlar' not in st.session_state or 'aylik_matris' not in st.session_state: verileri_yukle()
 if 'giris_yapildi' not in st.session_state: st.session_state.giris_yapildi = False
 
 if not st.session_state.giris_yapildi:
@@ -63,12 +53,10 @@ st.markdown("""<style>
     th { background-color: #bdd7ee !important; color: black !important; border: 1px solid black !important; text-align: center !important; }
     td { border: 1px solid #d9d9d9 !important; text-align: center !important; }
 </style>""", unsafe_allow_html=True)
-
 st.markdown('<div class="excel-title">POLAY MADENCİLİK DİNAMİK PUANTAJ SİSTEMİ</div>', unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏢 YÖNETİM PANELİ")
 if st.sidebar.button("🔒 Güvenli Çıkış Yap"): st.session_state.giris_yapildi = False; st.rerun()
-
 islem = st.sidebar.radio("İşlem Seçin", ["📅 Puantaj Matrisi & Rapor", "👤 Çalışan Ekle / Sil / Düzenle"])
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
@@ -84,11 +72,10 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
         y_id = max([c["id"] for c in st.session_state.calisanlar]) + 1 if st.session_state.calisanlar else 1
         st.session_state.calisanlar.append({"id": y_id, "ad_soyad": ad, "tur": tur, "ucret": ucret, "banka_tutari": b_tut})
         verileri_kaydet(); st.success("✔️ Başarıyla eklendi!"); st.rerun()
-        
     st.write("---")
     st.subheader("✏️ Mevcut Çalışanın Banka ve Ücret Bilgilerini Değiştir")
     isimler = [c["ad_soyad"] for c in st.session_state.calisanlar]
-    if list(set(isimler)):
+    if isimler:
         secilen_kisi = st.selectbox("Bilgilerini Güncelleyeceğiniz Personeli Seçin:", list(set(isimler)))
         idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_kisi)
         y_ucret = st.number_input("Güncel Ücret / Yevmiye (₺)", min_value=0, value=int(st.session_state.calisanlar[idx]["ucret"]))
@@ -97,7 +84,7 @@ if islem == "👤 Çalışan Ekle / Sil / Düzenle":
             st.session_state.calisanlar[idx]["ucret"], st.session_state.calisanlar[idx]["banka_tutari"] = y_ucret, y_banka
             verileri_kaydet(); st.success("✔️ Güncellendi!"); st.rerun()
     st.write("---")
-    if list(set(isimler)):
+    if isimler:
         sil_ad = st.selectbox("Sistemden Silinecek Çalışanı Seçin:", list(set(isimler)))
         if st.button("🚨 Seçilen Çalışanı Tamamen Sil"):
             st.session_state.calisanlar = [c for c in st.session_state.calisanlar if c["ad_soyad"] != sil_ad]
@@ -130,9 +117,8 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         if st.button("💾 Bu Ayın Puantaj Değişikliklerini Kaydet"):
             for _, row in g_tablo.iterrows():
                 c_id = int(row["SIRA"])
-                for gun in range(1, gun_sayisi + 1):
-                    st.session_state.aylik_matris[f"{secilen_yil}_{ay_no}_{c_id}_{gun}"] = str(row[sutun_haritalama[gun]]).strip().upper() if str(row[sutun_haritalama[gun]]).strip().upper() in gecerli_kodlar else ""
-            verileri_kaydet(); st.success("✔️ Puantajlar kalıcı hafızaya kaydedildi!"); st.rerun()
+                for gun in range(1, gun_sayisi + 1): st.session_state.aylik_matris[f"{secilen_yil}_{ay_no}_{c_id}_{gun}"] = str(row[sutun_haritalama[gun]]).strip().upper() if str(row[sutun_haritalama[gun]]).strip().upper() in gecerli_kodlar else ""
+            verileri_kaydet(); st.success("✔️ Puantajlar kalıcı olarak diske kaydedildi!"); st.rerun()
     st.write("---")
     st.subheader(f"💰 {secilen_ay} {secilen_yil} Hak Ediş ve Ödeme Dağılım Listesi")
     rapor_verisi = list()
@@ -161,3 +147,4 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         eld = float(h_edis - bnk)
         c_ad_guncel = f"🔥 {c['ad_soyad']} (ATEŞÇİ DAHİL)" if secilen_atesci == c["ad_soyad"] else c["ad_soyad"]
         if secilen_atesci == c["ad_soyad"]: eld, h_edis = eld + float(atesci_ucreti), h_edis + float(atesci_ucreti)
+        t_hakedis, t_banka, t_elden = t_hakedis + h_edis, t_banka + bnk, t_elden + eld
