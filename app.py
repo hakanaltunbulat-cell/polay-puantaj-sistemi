@@ -48,6 +48,7 @@ if menu == "👤 Çalışan Yönetimi":
                 "banka_tutari": banka_tutari, "giris_tarihi": giris_tar.strftime('%Y-%m-%d'), "aktif": True
             })
             st.success(f"✔️ {ad} başarıyla listeye eklendi!")
+            st.rerun()
 
     # 🛠️ --- ÇALIŞAN BİLGİLERİNİ DÜZENLEME ALANI ---
     st.write("---")
@@ -56,7 +57,10 @@ if menu == "👤 Çalışan Yönetimi":
     
     if aktif_isimler_duzenle:
         secilen_duzenle = st.selectbox("Bilgilerini değiştirmek istediğiniz çalışanı seçin:", aktif_isimler_duzenle, key="duzenle_sec")
-        calisan_bilgi = next(c for c in st.session_state.calisanlar if c["ad_soyad"] == secilen_duzenle)
+        
+        # Seçilen çalışanın indeksini ve verisini bulalım
+        idx = next(i for i, c in enumerate(st.session_state.calisanlar) if c["ad_soyad"] == secilen_duzenle)
+        calisan_bilgi = st.session_state.calisanlar[idx]
         
         with st.form("calisan_duzenle_form"):
             col1, col2 = st.columns(2)
@@ -70,10 +74,10 @@ if menu == "👤 Çalışan Yönetimi":
             guncelle_butonu = st.form_submit_button("🔄 Bilgileri Güncelle")
             
             if guncelle_butonu:
-                calisan_bilgi["tur"] = yeni_tur
-                calisan_bilgi["ucret"] = yeni_ucret
-                calisan_bilgi["banka_tutari"] = yeni_banka
-                calisan_bilgi["giris_tarihi"] = yeni_giris.strftime('%Y-%m-%d')
+                st.session_state.calisanlar[idx]["tur"] = yeni_tur
+                st.session_state.calisanlar[idx]["ucret"] = yeni_ucret
+                st.session_state.calisanlar[idx]["banka_tutari"] = yeni_banka
+                st.session_state.calisanlar[idx]["giris_tarihi"] = yeni_giris.strftime('%Y-%m-%d')
                 st.success(f"✔️ {secilen_duzenle} isimli çalışanın bilgileri başarıyla güncellendi!")
                 st.rerun()
 
@@ -196,9 +200,3 @@ elif menu == "💰 Maaş & Ödeme Raporu":
             "Tür": c["tur"],
             "İşe Giriş": c["giris_tarihi"],
             "Toplam Hak Ediş": f"{hak_edis:,.2f} ₺",
-            "Bankaya Yatacak": f"{banka:,.2f} ₺",
-            "Elden Verilecek": f"{elden:,.2f} ₺"
-        })
-        
-    if rapor_verisi:
-        st.table(pd.DataFrame(rapor_verisi))
