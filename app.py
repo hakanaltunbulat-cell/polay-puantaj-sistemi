@@ -128,10 +128,11 @@ secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
 calisanlar_listesi = calisanlari_getir()
 aylik_matris_depo = puantaj_matrisi_getir()
 
-# ==========================================
-# 📅 MODÜL 1: PUANTAJ MATRİSİ & MAAŞ HAKEDİŞ
-# ==========================================
-if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
+# ========================================================
+# 🛠️ PARÇALANMAZ VE BAĞIMSIZ SAYFA FONKSİYONLARI
+# ========================================================
+
+def sayfa_puantaj_ve_maas():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
@@ -154,7 +155,7 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    # Hücrelerin tamamen boş kalması için varsayılan değeri "" (boş dize) olarak ayarlıyoruz
+    # Hücreleri tamamen temiz ve boş dize ("") olarak getiriyoruz
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
@@ -191,7 +192,6 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         st.success("✔️ Tüm puantaj değişiklikleri veritabanına başarıyla kilitlendi!")
         st.rerun()
 
-    # MAAŞ HAKEDİŞ RAPORLAMA BÖLÜMÜ
     st.write("---")
     st.subheader("💰 Maaş Hakediş Raporu ve Dağılım Listesi")
 
@@ -254,6 +254,6 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         c2.metric("🏦 Toplam Banka Ödemesi", f"{df_rapor['Bankaya Yatacak'].sum():,.2f} ₺")
         c3.metric("💵 Toplam Elden Ödeme", f"{df_rapor['Elden Ödenecek'].sum():,.2f} ₺")
 
-# ==========================================
-# 🚜 MODÜL 2: GÜNLÜK FAALİYET & ÜRETİM GİRİŞİ
-# ==========================================
+def sayfa_gunluk_faaliyet():
+    st.subheader("🚜 Günlük İşlenen Faaliyetler ve Cevher/Pasa Takibi")
+    secilen_gun = st.date_input("İşlem Yapılacak Günü Seçin:", datetime(2026, 9, 1))
