@@ -34,7 +34,7 @@ def veritabani_hazirla():
         )
     """)
     
-    # 3. Günlük Üretim ve Faaliyet Tablosu (Yeni Eklenen Bölüm)
+    # 3. Günlük Üretim ve Faaliyet Tablosu
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS gunluk_faaliyet (
             tarih_anahtar TEXT PRIMARY KEY,
@@ -64,7 +64,7 @@ def veritabani_hazirla():
         cursor.executemany("INSERT INTO calisanlar (ad_soyad, tur, ucret, banka_tutari) VALUES (?, ?, ?, ?)", varsayilan_calisanlar)
         conn.commit()
         
-        # Varsayılan değerleri matrise işle
+        # Varsayılan değerleri matrise işle (Eylül 2026 için ilk kurulum)
         cursor.execute("SELECT id FROM calisanlar")
         isciler = cursor.fetchall()
         for isci in isciler:
@@ -146,56 +146,9 @@ calisanlar_listesi = calisanlari_getir()
 aylik_matris_depo = puantaj_matrisi_getir()
 
 # ==========================================
-# 🚜 GÜNLÜK FAALİYET & ÜRETİM GİRİŞİ MODÜLÜ
-# ==========================================
-if islem == "🚜 Günlük Faaliyet & Üretim Girişi":
-    st.subheader("🚜 Günlük İşlenen Faaliyetler ve Cevher/Pasa Takibi")
-    
-    secilen_gun = st.date_input("İşlem Yapılacak Günü Seçin:", datetime(2026, 9, 1))
-    tarih_key = secilen_gun.strftime("%Y_%m_%d")
-    
-    # Mevcut veriyi çek
-    v_cevher, v_pasa, v_karisik, v_tahkimat, v_delik = gunluk_faaliyet_getir(tarih_key)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🪵 Malzeme Taşımacılığı")
-        f_cevher = st.number_input("Günlük Gelen Traktör Cevher (Adet/Ton):", min_value=0.0, value=v_cevher, step=1.0)
-        f_pasa = st.number_input("Günlük Gelen Traktör Pasa (Adet/Ton):", min_value=0.0, value=v_pasa, step=1.0)
-        f_karisik = st.number_input("Günlük Gelen Karışık Traktör Cevher-Pasa (Adet/Ton):", min_value=0.0, value=v_karisik, step=1.0)
-        
-    with col2:
-        st.markdown("### 💣 Üretim & Destek Faaliyeti")
-        f_tahkimat = st.number_input("Günlük Atılan Tahkimat Sayısı:", min_value=0, value=v_tahkimat, step=1)
-        f_delik = st.number_input("Günlük Kullanılan Patlayıcı Delik Sayısı:", min_value=0, value=v_delik, step=1)
-
-    if st.button("💾 Günlük Faaliyet Verilerini Veritabanına Sabitle"):
-        conn = sqlite3.connect("puantaj.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO gunluk_faaliyet 
-            (tarih_anahtar, traktor_cevher, traktor_pasa, karasik_cevher_pasa, tahkimat_sayisi, patlayici_delik_sayisi) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (tarih_key, f_cevher, f_pasa, f_karisik, f_tahkimat, f_delik))
-        conn.commit()
-        conn.close()
-        st.success(f"✔️ {secilen_gun.strftime('%d-%m-%Y')} tarihine ait üretim verileri başarıyla kaydedildi!")
-
-    st.write("---")
-    st.markdown("### 📊 Bu Ayın Toplam Üretim Grafiği/Tablosu")
-    conn = sqlite3.connect("puantaj.db")
-    df_tum_faaliyet = pd.read_sql_query("SELECT * FROM gunluk_faaliyet", conn)
-    conn.close()
-    if not df_tum_faaliyet.empty:
-        st.dataframe(df_tum_faaliyet, use_container_width=True, hide_index=True)
-    else:
-        st.info("Henüz geçmiş günlere ait bir faaliyet kaydı bulunamadı.")
-
-# ==========================================
 # 📅 PUANTAJ MATRİSİ & MAAŞ HAKEDİŞ MODÜLÜ
 # ==========================================
-elif islem == "📅 Puantaj Matrisi & Rapor":
+if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
@@ -209,6 +162,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         "ADI SOYADI": st.column_config.TextColumn(disabled=True)
     }
     
+    # Gün başlıklarını oluşturma
     for gun in range(1, gun_sayisi + 1):
         try: 
             wd = datetime(secilen_yil, ay_no, gun).weekday()
@@ -218,6 +172,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
+    # Matris satırlarını veritabanından doldurma
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
@@ -229,7 +184,9 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     df_matris = pd.DataFrame(matris_data)
     
     st.subheader("📅 Aylık Puantaj Düzenleme Tablosu")
+    st.info("💡 Tablo üzerinde değişiklik yapabilir, kutucuklardan puantaj kodlarını (1, 0, 2, Ç) seçebilirsiniz.")
     
+    # Streamlit veri düzenleyici editörü
     edited_df = st.data_editor(
         df_matris, 
         column_config=config_sutunlar, 
@@ -237,6 +194,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         hide_index=True
     )
 
+    # Değişiklikleri Veritabanına Kaydetme Butonu
     if st.button("💾 Puantaj Değişikliklerini Veritabanına Kaydet"):
         conn = sqlite3.connect("puantaj.db")
         cursor = conn.cursor()
@@ -247,3 +205,61 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
                 s_adi = sutun_haritalama[gun]
                 yeni_deger = str(row[s_adi]) if row[s_adi] is not None else ""
                 anahtar = f"2026_9_{c_id}_{gun}"
+                cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (anahtar, yeni_deger))
+        conn.commit()
+        conn.close()
+        st.success("✔️ Tüm puantaj değişiklikleri veritabanına başarıyla kilitlendi!")
+        st.rerun()
+
+    # ==========================================
+    # 💰 MAAŞ HAKEDİŞ RAPORLAMA BÖLÜMÜ
+    # ==========================================
+    st.write("---")
+    st.subheader("💰 Maaş Hakediş Raporu ve Dağılım Listesi")
+
+    rapor_data = []
+    for _, row in edited_df.iterrows():
+        ad_soyad = row["ADI SOYADI"]
+        c_kart = next(c for c in calisanlar_listesi if c["ad_soyad"] == ad_soyad)
+
+        # Gün kod sayımlarını hesapla
+        yevmiye_sayisi = 0.0
+        for gun in range(1, gun_sayisi + 1):
+            kod = row[sutun_haritalama[gun]]
+            if kod == "1":
+                yevmiye_sayisi += 1.0
+            elif kod == "2":
+                yevmiye_sayisi += 2.0
+            elif kod == "Ç":
+                yevmiye_sayisi += 0.5
+
+        # Maaş Türüne Göre Toplam Hakediş Hesaplama
+        if c_kart["tur"] == "Yevmiye":
+            toplam_hakedis = yevmiye_sayisi * c_kart["ucret"]
+        else:  # Aylık sabit maaş
+            toplam_hakedis = c_kart["ucret"]
+
+        # Ateşçi Ödeneği Ekleme
+        if ad_soyad == secilen_atesci:
+            toplam_hakedis += atesci_ucreti
+
+        # Banka ve Elden Dağılım Hesaplama
+        banka_odeme = c_kart["banka_tutari"]
+        if toplam_hakedis < banka_odeme:
+            banka_odeme = toplam_hakedis
+
+        elden_odeme = toplam_hakedis - banka_odeme
+
+        rapor_data.append({
+            "Çalışan Adı Soyadı": ad_soyad,
+            "Maaş Tipi": c_kart["tur"],
+            "Birim Ücret/Maaş": f"{c_kart['ucret']:,.2f} ₺",
+            "Çalışılan Yevmiye": yevmiye_sayisi,
+            "Ateşçi Ödeneği": f"{atesci_ucreti if ad_soyad == secilen_atesci else 0:,.2f} ₺",
+            "Toplam Hakediş": toplam_hakedis,
+            "Bankaya Yatacak": banka_odeme,
+            "Elden Ödenecek": elden_odeme
+        })
+
+    df_rapor = pd.DataFrame(rapor_data)
+
