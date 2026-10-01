@@ -40,7 +40,6 @@ def veritabani_hazirla():
         )
     """)
     conn.commit()
-    
     cursor.execute("SELECT COUNT(*) FROM calisanlar")
     if cursor.fetchone()[0] == 0:
         varsayilan_calisanlar = [
@@ -80,8 +79,7 @@ def gunluk_faaliyet_getir(tarih_str):
     cursor.execute("SELECT traktor_cevher, traktor_pasa, karasik_cevher_pasa, tahkimat_sayisi, patlayici_delik_sayisi FROM gunluk_faaliyet WHERE tarih_anahtar = ?", (tarih_str,))
     sonuc = cursor.fetchone()
     conn.close()
-    if sonuc: 
-        return sonuc
+    if sonuc: return sonuc
     return (0.0, 0.0, 0.0, 0, 0)
 
 # Oturum Durumu Kontrolü
@@ -116,7 +114,6 @@ if st.sidebar.button("🔒 Programdan Güvenli Çıkış Yap"):
 
 # Sabit Değişkenler
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
-gecerli_kodlar = ["1", "0", "2", "C", ""]
 secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
 
 calisanlar_listesi = calisanlari_getir()
@@ -124,7 +121,7 @@ aylik_matris_depo = puantaj_matrisi_getir()
 
 # Sol menü üzerinden ekran seçimi (Asla çökmez, modüller kaybolmaz)
 st.sidebar.markdown("### 🏢 PROGRAM MODÜLLERİ")
-secilen_modul = st.sidebar.radio("Görüntülenecek Ekranı Seçin:", [
+islem = st.sidebar.radio("Görüntülenecek Ekranı Seçin:", [
     "📅 Puantaj Matrisi & Maaş Hakediş",
     "🚜 Günlük Faaliyet & Üretim Girişi",
     "👤 Çalışan Yönetimi Kartları"
@@ -133,7 +130,7 @@ secilen_modul = st.sidebar.radio("Görüntülenecek Ekranı Seçin:", [
 # ========================================================
 # 📅 EKRAN 1: PUANTAJ VE HAKEDİŞ RAPORU
 # ========================================================
-if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
+def modul_puantaj_ve_maas():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
@@ -142,19 +139,20 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
     
     matris_data = []
     sutun_haritalama = {}
+    
+    # Hücreleri tamamen serbest yazı alanına çevirmek için TextColumn tipinde kilitledik
     config_sutunlar = {
         "SIRA": st.column_config.NumberColumn(disabled=True), 
         "ADI SOYADI": st.column_config.TextColumn(disabled=True)
     }
     
     for gun in range(1, gun_sayisi + 1):
-        try:
-            wd = datetime(secilen_yil, ay_no, gun).weekday()
-        except:
-            wd = 0
+        try: wd = datetime(secilen_yil, ay_no, gun).weekday()
+        except: wd = 0
         s_adi = f"{gun} {gun_kisa_adlar[wd]}"
         sutun_haritalama[gun] = s_adi
-        config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
+        # Klavyeden her şeyin yazılabilmesi ve tamamen silinebilmesi için serbest metin sütunu yapıldı
+        config_sutunlar[s_adi] = st.column_config.TextColumn(width="small")
 
     # Hücreleri tamamen temiz ve boş dize ("") getiriyoruz
     for i, c in enumerate(calisanlar_listesi, 1):
@@ -167,7 +165,7 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
 
     df_matris = pd.DataFrame(matris_data)
     st.subheader("📅 Aylık Puantaj Düzenleme Tablosu")
-    st.info("💡 Hücrelere çift tıklayarak klavyeden elinizle puantaj kodlarını (1, 0, 2, C) girebilir veya silebilirsiniz.")
+    st.info("💡 Hücrelere çift tıklayarak klavyeden elinizle puantaj kodlarını (1, 0, 2, C) girebilirsiniz. Silmek için hücreyi seçip Delete/Backspace tuşuna basmanız yeterlidir.")
     
     edited_df = st.data_editor(df_matris, column_config=config_sutunlar, use_container_width=True, hide_index=True)
 
@@ -179,7 +177,9 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
             c_id = next(c["id"] for c in calisanlar_listesi if c["ad_soyad"] == ad_soyad)
             for gun in range(1, gun_sayisi + 1):
                 s_adi = sutun_haritalama[gun]
-                yeni_deger = str(row[s_adi]) if row[s_adi] is not None else ""
+                yeni_deger = str(row[s_adi]).strip().upper() if row[s_adi] is not None else ""
+                if yeni_deger not in ["1", "0", "2", "C", ""]:
+                    yeni_deger = ""  # Geçersiz bir şey yazılırsa temizle
                 anahtar = f"2026_9_{c_id}_{gun}"
                 cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (anahtar, yeni_deger))
         conn.commit()
@@ -194,32 +194,22 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
     for _, row in edited_df.iterrows():
         ad_soyad = row["ADI SOYADI"]
         c_kart = next(c for c in calisanlar_listesi if c["ad_soyad"] == ad_soyad)
-
         yevmiye_sayisi = 0.0
         cikis_yapildi = False
         
         for gun in range(1, gun_sayisi + 1):
-            if cikis_yapildi: 
-                break
-            kod = row[sutun_haritalama[gun]]
-            if kod == "C": 
-                cikis_yapildi = True
-            elif kod == "1": 
-                yevmiye_sayisi += 1.0
-            elif kod == "2": 
-                yevmiye_sayisi += 2.0
+            if cikis_yapildi: break
+            val = str(row[sutun_haritalama[gun]]).strip().upper() if row[sutun_haritalama[gun]] is not None else ""
+            if val == "C": cikis_yapildi = True
+            elif val == "1": yevmiye_sayisi += 1.0
+            elif val == "2": yevmiye_sayisi += 2.0
 
-        if c_kart["tur"] == "Yevmiye": 
-            toplam_hakedis = yevmiye_sayisi * c_kart["ucret"]
-        else: 
-            toplam_hakedis = c_kart["ucret"]
-
-        if ad_soyad == secilen_atesci: 
-            toplam_hakedis += atesci_ucreti
+        if c_kart["tur"] == "Yevmiye": toplam_hakedis = yevmiye_sayisi * c_kart["ucret"]
+        else: toplam_hakedis = c_kart["ucret"]
+        if ad_soyad == secilen_atesci: toplam_hakedis += atesci_ucreti
 
         banka_odeme = c_kart["banka_tutari"]
-        if toplam_hakedis < banka_odeme: 
-            banka_odeme = toplam_hakedis
+        if toplam_hakedis < banka_odeme: banka_odeme = toplam_hakedis
         elden_odeme = toplam_hakedis - banka_odeme
 
         rapor_data.append({
@@ -239,13 +229,8 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
         df_rapor_gosterim["Toplam Hakediş"] = df_rapor_gosterim["Toplam Hakediş"].map("{:,.2f} ₺".format)
         df_rapor_gosterim["Bankaya Yatacak"] = df_rapor_gosterim["Bankaya Yatacak"].map("{:,.2f} ₺".format)
         df_rapor_gosterim["Elden Ödenecek"] = df_rapor_gosterim["Elden Ödenecek"].map("{:,.2f} ₺".format)
-
         st.dataframe(df_rapor_gosterim, use_container_width=True, hide_index=True)
-
+        
         c1, c2, c3 = st.columns(3)
         c1.metric("💰 Toplam Genel Hakediş", f"{df_rapor['Toplam Hakediş'].sum():,.2f} ₺")
         c2.metric("🏦 Toplam Banka Ödemesi", f"{df_rapor['Bankaya Yatacak'].sum():,.2f} ₺")
-        c3.metric("💵 Toplam Elden Ödeme", f"{df_rapor['Elden Ödenecek'].sum():,.2f} ₺")
-
-# ========================================================
-# 🚜 EKRAN 2: GÜNLÜK FAALİYET GİRİŞİ BÖLÜMÜ
