@@ -185,6 +185,7 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         "ADI SOYADI": st.column_config.TextColumn(disabled=True)
     }
     
+    # Gün başlıklarını oluşturma
     for gun in range(1, gun_sayisi + 1):
         try: 
             wd = datetime(secilen_yil, ay_no, gun).weekday()
@@ -194,47 +195,43 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    for c in calisanlar_listesi:
-        satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
+    # Matris satırlarını veritabanından doldurma
+    for i, c in enumerate(calisanlar_listesi, 1):
+        row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
             s_adi = sutun_haritalama[gun]
-            anahtar = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
-            satir[s_adi] = aylik_matris_depo.get(anahtar, "1")
-        matris_data.append(satir)
+            anahtar = f"2026_9_{c['id']}_{gun}"
+            row_dict[s_adi] = aylik_matris_depo.get(anahtar, "1")
+        matris_data.append(row_dict)
 
     df_matris = pd.DataFrame(matris_data)
     
-    st.info("💡 Tablo üzerinde hücrelere tıklayarak puantaj kodlarını ('1', '0', '2', 'Ç') değiştirebilirsiniz.")
+    st.subheader("📅 Aylık Puantaj Düzenleme Tablosu")
+    st.info("💡 Tablo üzerinde değişiklik yapabilir, kutucuklardan puantaj kodlarını (1, 0, 2, Ç) seçebilirsiniz.")
     
-    # 📝 DATA EDITOR - Dinamik Puantaj Girişi
+    # Streamlit veri düzenleyici editörü
     edited_df = st.data_editor(
         df_matris, 
         column_config=config_sutunlar, 
         use_container_width=True, 
         hide_index=True
     )
-    
-    # 💾 Değişiklikleri Veritabanına Kaydetme Butonu
+
+    # Değişiklikleri Veritabanına Kaydetme Butonu
     if st.button("💾 Puantaj Değişikliklerini Veritabanına Kaydet"):
         conn = sqlite3.connect("puantaj.db")
         cursor = conn.cursor()
         for _, row in edited_df.iterrows():
-            isci_id = row["SIRA"]
+            ad_soyad = row["ADI SOYADI"]
+            c_id = next(c["id"] for c in calisanlar_listesi if c["ad_soyad"] == ad_soyad)
             for gun in range(1, gun_sayisi + 1):
                 s_adi = sutun_haritalama[gun]
-                yeni_deger = str(row[s_adi])
-                anahtar = f"{secilen_yil}_{ay_no}_{isci_id}_{gun}"
+                yeni_deger = str(row[s_adi]) if row[s_adi] is not None else ""
+                anahtar = f"2026_9_{c_id}_{gun}"
                 cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (anahtar, yeni_deger))
         conn.commit()
         conn.close()
-        st.success("✔️ Güncel puantaj matrisi başarıyla veritabanına kilitlendi!")
+        st.success("✔️ Tüm puantaj değişiklikleri veritabanına başarıyla kilitlendi!")
         st.rerun()
 
     # ==========================================
-    # 🧮 HAKEDİŞ VE MAAŞ RAPORLAMA BÖLÜMÜ
-    # ==========================================
-    st.write("---")
-    st.subheader(f"📊 {secilen_ay} {secilen_yil} Dönemi Maaş & Hakediş Raporu")
-    
-    rapor_data = []
-    for _, row in edited_df.iterrows():
