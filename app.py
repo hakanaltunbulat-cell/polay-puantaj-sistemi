@@ -116,7 +116,7 @@ st.markdown("""<style>
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK MASAÜSTÜ YÖNETİM PANELİ</div>', unsafe_allow_html=True)
 
-# 🏢 SOL MENÜ YÖNETİMİ (Tekilleştirildi)
+# 🏢 SOL MENÜ YÖNETİMİ
 st.sidebar.markdown("### 🏢 PROGRAM MODÜLLERİ")
 islem = st.sidebar.radio("Görüntülenecek Ekran:", [
     "📅 Puantaj Matrisi & Maaş Hakediş", 
@@ -161,7 +161,7 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    # Tüm gün hücreleri klavyeden elle girilmesi için varsayılan olarak boş gelir
+    # Hücreler klavyeden elle girilebilsin diye varsayılan olarak boş dize ("") getirilir
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
