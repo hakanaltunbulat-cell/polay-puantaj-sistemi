@@ -102,25 +102,14 @@ if not st.session_state.giris_yapildi:
             st.error("🚨 Hatalı Giriş Bilgileri!")
     st.stop()
 
-# 🎨 TASARIM STİLLERİ
+# 🎨 TASARIM STİLLERİ VE ÜST BAŞLIK
 st.markdown("""<style>
     .excel-title { background-color: #1e3d59 !important; color: white !important; text-align: center; font-weight: bold; font-size: 22px; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
 </style>""", unsafe_allow_html=True)
 
 st.markdown('<div class="excel-title">POLAY MADENCİLİK MASAÜSTÜ YÖNETİM PANELİ</div>', unsafe_allow_html=True)
 
-# 🏢 SOL MENÜ YÖNETİMİ
-st.sidebar.markdown("### 🏢 PROGRAM MODÜLLERİ")
-islem = st.sidebar.radio("Görüntülenecek Ekran:", [
-    "📅 Puantaj Matrisi & Maaş Hakediş", 
-    "🚜 Günlük Faaliyet & Üretim Girişi",
-    "👤 Çalışan Yönetimi Kartları"
-])
-
-if st.sidebar.button("🔒 Programı Güvenli Kapat/Çıkış"):
-    st.session_state.giris_yapildi = False
-    st.rerun()
-
+# Sabit Değişkenler
 gun_kisa_adlar = {0: "PZT", 1: "SAL", 2: "ÇAR", 3: "PER", 4: "CUM", 5: "CMT", 6: "PZ"}
 gecerli_kodlar = ["1", "0", "2", "Ç", ""]
 secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
@@ -128,11 +117,10 @@ secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
 calisanlar_listesi = calisanlari_getir()
 aylik_matris_depo = puantaj_matrisi_getir()
 
-# ========================================================
-# 🛠️ PARÇALANMAZ VE BAĞIMSIZ SAYFA FONKSİYONLARI
-# ========================================================
-
-def sayfa_puantaj_ve_maas():
+# ==========================================
+# 📅 MODÜL 1: PUANTAJ VE HAKEDİŞ SAYFASI
+# ==========================================
+def sayfa_puantaj_maas():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
@@ -155,7 +143,7 @@ def sayfa_puantaj_ve_maas():
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    # Hücreleri tamamen temiz ve boş dize ("") olarak getiriyoruz
+    # Hücreleri tamamen boş ve temiz getiriyoruz
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
@@ -254,6 +242,18 @@ def sayfa_puantaj_ve_maas():
         c2.metric("🏦 Toplam Banka Ödemesi", f"{df_rapor['Bankaya Yatacak'].sum():,.2f} ₺")
         c3.metric("💵 Toplam Elden Ödeme", f"{df_rapor['Elden Ödenecek'].sum():,.2f} ₺")
 
+# ==========================================
+# 🚜 MODÜL 2: GÜNLÜK FAALİYET SAYFASI
+# ==========================================
 def sayfa_gunluk_faaliyet():
     st.subheader("🚜 Günlük İşlenen Faaliyetler ve Cevher/Pasa Takibi")
+
     secilen_gun = st.date_input("İşlem Yapılacak Günü Seçin:", datetime(2026, 9, 1))
+    tarih_key = secilen_gun.strftime("%Y_%m_%d")
+
+    v_cevher, v_pasa, v_karisik, v_tahkimat, v_delik = gunluk_faaliyet_getir(tarih_key)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🪵 Malzeme Taşımacılığı")
