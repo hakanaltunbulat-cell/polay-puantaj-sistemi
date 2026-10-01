@@ -84,7 +84,7 @@ def gunluk_faaliyet_getir(tarih_str):
         return sonuc
     return (0.0, 0.0, 0.0, 0, 0)
 
-# Oturum Kontrolü
+# Oturum Durumu Kontrolü
 if 'giris_yapildi' not in st.session_state:
     st.session_state.giris_yapildi = False
 
@@ -102,7 +102,7 @@ if not st.session_state.giris_yapildi:
             st.error("🚨 Hatalı Giriş Bilgileri!")
     st.stop()
 
-# 🎨 EXCEL BENZERİ TASARIM STİLLERİ
+# 🎨 TASARIM STİLLERİ
 st.markdown("""<style>
     .excel-title { background-color: #1e3d59 !important; color: white !important; text-align: center; font-weight: bold; font-size: 22px; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
 </style>""", unsafe_allow_html=True)
@@ -167,7 +167,7 @@ if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
 
     df_matris = pd.DataFrame(matris_data)
     st.subheader("📅 Aylık Puantaj Düzenleme Tablosu")
-    st.info("💡 Hücrelere çift tıklayarak klavyeden elinizle puantaj kodlarını (1, 0, 2, C) girebilirsiniz.")
+    st.info("💡 Hücrelere çift tıklayarak klavyeden elinizle puantaj kodlarını (1, 0, 2, C) girebilir veya silebilirsiniz.")
     
     edited_df = st.data_editor(df_matris, column_config=config_sutunlar, use_container_width=True, hide_index=True)
 
