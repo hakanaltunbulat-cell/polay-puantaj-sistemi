@@ -154,7 +154,7 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    # Hücrelerin tamamen boş kalması için varsayılan değeri "" olarak atıyoruz
+    # Hücrelerin tamamen boş kalması için varsayılan değeri "" (boş dize) olarak ayarlıyoruz
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
@@ -191,6 +191,7 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         st.success("✔️ Tüm puantaj değişiklikleri veritabanına başarıyla kilitlendi!")
         st.rerun()
 
+    # MAAŞ HAKEDİŞ RAPORLAMA BÖLÜMÜ
     st.write("---")
     st.subheader("💰 Maaş Hakediş Raporu ve Dağılım Listesi")
 
@@ -213,8 +214,6 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
                 yevmiye_sayisi += 1.0
             elif kod == "2":
                 yevmiye_sayisi += 2.0
-            elif kod == "Ç":
-                yevmiye_sayisi += 0.5
 
         if c_kart["tur"] == "Yevmiye":
             toplam_hakedis = yevmiye_sayisi * c_kart["ucret"]
