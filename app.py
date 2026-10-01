@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import sqlite3
+import io
 
 KULLANICI_ADI, SIFRE = "polay", "1234"
 st.set_page_config(page_title="Polay Madencilik Puantaj", layout="wide")
@@ -48,7 +49,7 @@ def veritabani_hazirla():
         cursor.executemany("INSERT INTO calisanlar (ad_soyad, tur, ucret, banka_tutari) VALUES (?, ?, ?, ?)", varsayilan_calisanlar)
         conn.commit()
         
-        # Görseldeki varsayılan 0 değerlerini matrise işle
+        # Varsayılan değerleri matrise işle
         cursor.execute("SELECT id FROM calisanlar")
         isciler = cursor.fetchall()
         for isci in isciler:
@@ -179,50 +180,61 @@ elif islem == "📅 Puantaj Matrisi & Rapor":
     
     matris_data = list()
     sutun_haritalama = dict()
-    config_sutunlar = {"SIRA": st.column_config.NumberColumn(disabled=True), "ADI SOYADI": st.column_config.TextColumn(disabled=True)}
+    config_sutunlar = {
+        "SIRA": st.column_config.NumberColumn(disabled=True), 
+        "ADI SOYADI": st.column_config.TextColumn(disabled=True)
+    }
     
+    for gun in range(1, gun_sayisi + 1):
+        try: 
+            wd = datetime(secilen_yil, ay_no, gun).weekday()
+        except: 
+            wd = 0
+        s_adi = f"{gun} {gun_kisa_adlar[wd]}"
+        sutun_haritalama[gun] = s_adi
+        config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
+
     for c in calisanlar_listesi:
         satir = {"SIRA": int(c["id"]), "ADI SOYADI": str(c["ad_soyad"])}
         for gun in range(1, gun_sayisi + 1):
-            try: wd = datetime(secilen_yil, ay_no, gun).weekday()
-            except: wd = 0
-            s_adi = f"{gun} {gun_kisa_adlar[wd]}"
-            sutun_haritalama[gun] = s_adi
-            config_sutunlar[s_adi] = st.column_config.TextColumn(width="small")
-            
-            m_key = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
-            satir[s_adi] = aylik_matris_depo.get(m_key, "")
+            s_adi = sutun_haritalama[gun]
+            anahtar = f"{secilen_yil}_{ay_no}_{c['id']}_{gun}"
+            satir[s_adi] = aylik_matris_depo.get(anahtar, "1")
         matris_data.append(satir)
-        
-    if matris_data:
-        df_matris = pd.DataFrame(matris_data)
-        
-        with st.form("puantaj_formu"):
-            st.markdown("💡 *Tabloda düzenlemeleri yapın ve veritabanına kalıcı işlenmesi için **Kaydet** butonuna basın.*")
-            g_tablo = st.data_editor(
-                df_matris, 
-                hide_index=True, 
-                column_config=config_sutunlar, 
-                use_container_width=True, 
-                key="m_ed_v_f"
-            )
-            
-            kaydet_butonu = st.form_submit_button("💾 Bu Ayın Puantaj Değişikliklerini Veritabanına Kaydet")
-            
-            if kaydet_butonu:
-                conn = sqlite3.connect("puantaj.db")
-                cursor = conn.cursor()
-                for _, row in g_tablo.iterrows():
-                    c_id = int(row["SIRA"])
-                    for gun in range(1, gun_sayisi + 1):
-                        yeni_val = str(row[sutun_haritalama[gun]]).strip().upper()
-                        m_key_save = f"{secilen_yil}_{ay_no}_{c_id}_{gun}"
-                        val_to_save = yeni_val if yeni_val in gecerli_kodlar else ""
-                        cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (m_key_save, val_to_save))
-                conn.commit()
-                conn.close()
-                st.success("✔️ Tüm puantaj değişiklikleri veritabanı dosyasına kilitlendi!")
-                st.rerun()
+
+    df_matris = pd.DataFrame(matris_data)
+    
+    st.info("💡 Tablo üzerinde hücrelere tıklayarak puantaj kodlarını ('1', '0', '2', 'Ç') değiştirebilirsiniz.")
+    
+    # 📝 DATA EDITOR - Dinamik Puantaj Girişi
+    edited_df = st.data_editor(
+        df_matris, 
+        column_config=config_sutunlar, 
+        use_container_width=True, 
+        hide_index=True
+    )
+    
+    # 💾 Değişiklikleri Veritabanına Kaydetme Butonu
+    if st.button("💾 Puantaj Değişikliklerini Veritabanına Kaydet"):
+        conn = sqlite3.connect("puantaj.db")
+        cursor = conn.cursor()
+        for _, row in edited_df.iterrows():
+            isci_id = row["SIRA"]
+            for gun in range(1, gun_sayisi + 1):
+                s_adi = sutun_haritalama[gun]
+                yeni_deger = str(row[s_adi])
+                anahtar = f"{secilen_yil}_{ay_no}_{isci_id}_{gun}"
+                cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (anahtar, yeni_deger))
+        conn.commit()
+        conn.close()
+        st.success("✔️ Güncel puantaj matrisi başarıyla veritabanına kilitlendi!")
+        st.rerun()
 
     # ==========================================
-    # 💰 HAK EDİŞ VE ÖDEME RAPOR HESAPLAMALARI
+    # 🧮 HAKEDİŞ VE MAAŞ RAPORLAMA BÖLÜMÜ
+    # ==========================================
+    st.write("---")
+    st.subheader(f"📊 {secilen_ay} {secilen_yil} Dönemi Maaş & Hakediş Raporu")
+    
+    rapor_data = []
+    for _, row in edited_df.iterrows():
