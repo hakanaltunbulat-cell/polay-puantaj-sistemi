@@ -122,23 +122,23 @@ secilen_yil, ay_no, gun_sayisi = 2026, 9, 30
 calisanlar_listesi = calisanlari_getir()
 aylik_matris_depo = puantaj_matrisi_getir()
 
-# ========================================================
-# 🚀 HATA GEÇİRMEZ MERKEZİ SEKME (TABS) MİMARİSİ
-# ========================================================
-sekme1, sekme2, sekme3 = st.tabs([
-    "📅 Puantaj Matrisi & Maaş Hakediş", 
-    "🚜 Günlük Faaliyet & Üretim Girişi", 
+# Sol menü üzerinden ekran seçimi (Asla çökmez, modüller kaybolmaz)
+st.sidebar.markdown("### 🏢 PROGRAM MODÜLLERİ")
+secilen_modul = st.sidebar.radio("Görüntülenecek Ekranı Seçin:", [
+    "📅 Puantaj Matrisi & Maaş Hakediş",
+    "🚜 Günlük Faaliyet & Üretim Girişi",
     "👤 Çalışan Yönetimi Kartları"
 ])
 
-# --------------------------------------------------------
-# 📅 SEKME 1: PUANTAJ VE HAKEDİŞ RAPORU
-# --------------------------------------------------------
-with sekme1:
-    st.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
+# ========================================================
+# 📅 EKRAN 1: PUANTAJ VE HAKEDİŞ RAPORU
+# ========================================================
+if secilen_modul == "📅 Puantaj Matrisi & Maaş Hakediş":
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🧨 Ateşçi Ödeneği Ayarları")
     aktif_isimler = [c["ad_soyad"] for c in calisanlar_listesi]
-    secilen_atesci = st.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
-    atesci_ucreti = st.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
+    secilen_atesci = st.sidebar.selectbox("Bu Ayki Ateşçi Kim?", ["Hiçbiri"] + aktif_isimler, index=0)
+    atesci_ucreti = st.sidebar.number_input("Ateşçi Ödenek Tutarı (₺)", min_value=0, value=30000, step=5000)
     
     matris_data = []
     sutun_haritalama = {}
@@ -148,9 +148,9 @@ with sekme1:
     }
     
     for gun in range(1, gun_sayisi + 1):
-        try: 
+        try:
             wd = datetime(secilen_yil, ay_no, gun).weekday()
-        except: 
+        except:
             wd = 0
         s_adi = f"{gun} {gun_kisa_adlar[wd]}"
         sutun_haritalama[gun] = s_adi
@@ -247,7 +247,5 @@ with sekme1:
         c2.metric("🏦 Toplam Banka Ödemesi", f"{df_rapor['Bankaya Yatacak'].sum():,.2f} ₺")
         c3.metric("💵 Toplam Elden Ödeme", f"{df_rapor['Elden Ödenecek'].sum():,.2f} ₺")
 
-# --------------------------------------------------------
-# 🚜 SEKME 2: GÜNLÜK FAALİYET GİRİŞİ BÖLÜMÜ
-# --------------------------------------------------------
-with sekme2:
+# ========================================================
+# 🚜 EKRAN 2: GÜNLÜK FAALİYET GİRİŞİ BÖLÜMÜ
