@@ -63,16 +63,6 @@ def veritabani_hazirla():
         ]
         cursor.executemany("INSERT INTO calisanlar (ad_soyad, tur, ucret, banka_tutari) VALUES (?, ?, ?, ?)", varsayilan_calisanlar)
         conn.commit()
-        
-        # Varsayılan değerleri matrise işle (Eylül 2026 için ilk kurulum)
-        cursor.execute("SELECT id FROM calisanlar")
-        isciler = cursor.fetchall()
-        for isci in isciler:
-            isci_id = isci[0]
-            for g in range(1, 31):
-                kod = "0" if g in [11, 17, 25] else "1"
-                cursor.execute("INSERT OR REPLACE INTO puantaj (matris_anahtar, deger) VALUES (?, ?)", (f"2026_9_{isci_id}_{g}", kod))
-        conn.commit()
     conn.close()
 
 veritabani_hazirla()
@@ -172,19 +162,20 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
         sutun_haritalama[gun] = s_adi
         config_sutunlar[s_adi] = st.column_config.SelectboxColumn(options=gecerli_kodlar, width="small")
 
-    # Matris satırlarını veritabanından doldurma
+    # Matris satırlarını veritabanından doldurma (Varsayılan olarak boş dize gelir)
     for i, c in enumerate(calisanlar_listesi, 1):
         row_dict = {"SIRA": i, "ADI SOYADI": c["ad_soyad"]}
         for gun in range(1, gun_sayisi + 1):
             s_adi = sutun_haritalama[gun]
             anahtar = f"2026_9_{c['id']}_{gun}"
-            row_dict[s_adi] = aylik_matris_depo.get(anahtar, "1")
+            # Hücrelerin boş kalması için varsayılan değeri "" yaptık
+            row_dict[s_adi] = aylik_matris_depo.get(anahtar, "")
         matris_data.append(row_dict)
 
     df_matris = pd.DataFrame(matris_data)
     
     st.subheader("📅 Aylık Puantaj Düzenleme Tablosu")
-    st.info("💡 Tablo üzerinde değişiklik yapabilir, kutucuklardan puantaj kodlarını (1, 0, 2, Ç) seçebilirsiniz.")
+    st.info("💡 Hücrelere çift tıklayarak klavyeden elinizle puantaj kodlarını (1, 0, 2, Ç) girebilirsiniz.")
     
     # Streamlit veri düzenleyici editörü
     edited_df = st.data_editor(
@@ -261,5 +252,10 @@ if islem == "📅 Puantaj Matrisi & Maaş Hakediş":
             "Elden Ödenecek": elden_odeme
         })
 
-    df_rapor = pd.DataFrame(rapor_data)
-
+    if rapor_data:
+        df_rapor = pd.DataFrame(rapor_data)
+        
+        # Görsel formatlama
+        df_rapor_gosterim = df_rapor.copy()
+        df_rapor_gosterim["Toplam Hakediş"] = df_rapor_gosterim["Toplam Hakediş"].map("{:,.2f} ₺".format)
+        df_rapor_gosterim["Bankaya Yatacak"] = df_rapor_gosterim["Bankaya Yatacak"].map("{:,.2f} ₺".format)
